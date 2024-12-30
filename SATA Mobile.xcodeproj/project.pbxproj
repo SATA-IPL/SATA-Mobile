@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		160182952D20CA46009DA2EF /* BezelKit in Frameworks */ = {isa = PBXBuildFile; productRef = 160182942D20CA46009DA2EF /* BezelKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		16ECB2F72D1DD9D400367F2A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				160182952D20CA46009DA2EF /* BezelKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = "SATA Mobile";
 			packageProductDependencies = (
+				160182942D20CA46009DA2EF /* BezelKit */,
 			);
 			productName = "SATA Mobile";
 			productReference = 16ECB2E32D1DD9D200367F2A /* SATA Mobile.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 16ECB2DA2D1DD9D200367F2A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				160182932D20CA46009DA2EF /* XCRemoteSwiftPackageReference "BezelKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16ECB2E42D1DD9D200367F2A /* Products */;
 			projectDirPath = "";
@@ -396,6 +405,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SATA-Mobile-Info.plist";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -435,6 +445,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SATA-Mobile-Info.plist";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -591,6 +602,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		160182932D20CA46009DA2EF /* XCRemoteSwiftPackageReference "BezelKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/markbattistella/BezelKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		160182942D20CA46009DA2EF /* BezelKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 160182932D20CA46009DA2EF /* XCRemoteSwiftPackageReference "BezelKit" */;
+			productName = BezelKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 16ECB2DB2D1DD9D200367F2A /* Project object */;
 }

@@ -8,53 +8,66 @@
 import SwiftUI
 import SwiftData
 
+enum Tab: String, Hashable {
+    case games
+    case profile
+    
+    var title: String {
+        switch self {
+        case .games:
+            return "Games"
+        case .profile:
+            return "Profile"
+        }
+    }
+}
+
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @StateObject private var viewModel = GamesViewModel()
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+    @State private var showOnboarding = false
+    
+    @State private var selectedTab: Tab = Tab.games
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        GeometryReader { proxy in
+            
+            ZStack {
+                LinearGradient(
+                    colors: [.red.opacity(0.8), .red.opacity(0.3)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                NavigationStack {
+                    TabView(selection: $selectedTab) {
+                        GamesView()
+                            .tag(Tab.games)
+                            .tabItem {
+                                Label("Games", systemImage: "play.tv")
+                            }
+                        
+                        NavigationStack {
+                            ProfileView()
+                                .tag(Tab.profile)
+                        }
+                        .tabItem {
+                            Label("Profile", systemImage: "person.circle.fill")
+                        }
                     }
-                }
-                .onDelete(perform: deleteItems)
-            }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+                    .navigationTitle(selectedTab.title)
+                    .tabViewStyle(.sidebarAdaptable)
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            .sheet(isPresented: $showOnboarding, onDismiss: {
+                hasSeenOnboarding = true
+            }) {
+                OnboardingView()
+            }
+            .onAppear {
+                if !hasSeenOnboarding {
+                    showOnboarding = true
+                }
             }
         }
     }
@@ -62,5 +75,4 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }

@@ -1,3 +1,5 @@
+import Foundation
+
 struct Game: Identifiable, Decodable {
   let awayScore: Int
   let awayTeam: Team
@@ -55,5 +57,26 @@ struct Game: Identifiable, Decodable {
   
   static func == (lhs: Game, rhs: Game) -> Bool {
     lhs.id == rhs.id
+  }
+
+  func generateContext() -> String {
+    var context = """
+        Game Info:
+        - Match: \(homeTeam.name) vs \(awayTeam.name)
+        - Score: \(homeScore)-\(awayScore)
+        - Date: \(date)
+        - Time: \(hour)
+        - Status: \(state)
+        """
+    
+    if let venue = venue {
+        context += "\n- Venue: \(venue)"
+    }
+    
+    if let stadium = stadium {
+        context += "\n- Stadium: \(stadium.stadiumName)"
+    }
+    
+    return context
   }
 }

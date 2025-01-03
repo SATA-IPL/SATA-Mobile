@@ -8,7 +8,6 @@ struct GamesView: View {
     var body: some View {
             Group { content }
                 .onAppear(perform: handleOnAppear)
-                .navigationTitle("Games")
                 .background(
                     LinearGradient(
                         gradient: Gradient(colors: [Color.accent.opacity(0.2), Color.accent.opacity(0.01)]),

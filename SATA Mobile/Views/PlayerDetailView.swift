@@ -65,18 +65,26 @@ struct PlayerDetailView: View {
                 // Player Info Grid
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
                     GridRow {
-                        PlayerInfoItem(label: "ALTURA", value: player.height)
-                        PlayerInfoItem(label: "NACIONALIDADE", value: player.citizenship)
+                        PlayerInfoItem(label: "HEIGHT", value: player.height)
+                        PlayerInfoItem(label: "NATIONALITY", value: player.citizenship)
                     }
                     GridRow {
-                        PlayerInfoItem(label: "IDADE", value: player.age)
-                        PlayerInfoItem(label: "PÉ", value: player.foot.uppercased())
+                        PlayerInfoItem(label: "AGE", value: player.age)
+                        PlayerInfoItem(label: "FOOT", value: player.foot.uppercased())
                     }
                 }
                 
                 // Market Value Card
                 HStack {
-                    StatItem(value: player.marketValue, label: "Valor Mercado")
+                    StatItem(value: player.stats.appearances ?? 0, label: "Games")
+                    Spacer()
+                    StatItem(value: player.stats.goals ?? 0, label: "Goals")
+                    Spacer()
+                    StatItem(value: player.stats.assists ?? 0, label: "Assists")
+                    Spacer()
+                    StatItem(value: player.stats.yellowCards ?? 0, label: "Yellow's")
+                    Spacer()
+                    StatItem(value: player.stats.redCards ?? 0, label: "Red's")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -130,7 +138,7 @@ struct PlayerDetailView: View {
     }
     
     private func share() {
-        // Share functionality can be implemented here
+        // Share functionality to be implemented here
     }
 }
 
@@ -152,12 +160,12 @@ struct PlayerInfoItem: View {
 }
 
 struct StatItem: View {
-    let value: String
+    let value: Int
     let label: String
     
     var body: some View {
         VStack(spacing: 4) {
-            Text(value)
+            Text(value, format: .number.notation(.compactName))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
             Text(label)

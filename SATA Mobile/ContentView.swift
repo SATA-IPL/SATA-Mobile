@@ -10,14 +10,14 @@ import SwiftData
 
 enum Tab: String, Hashable {
     case games
-    case profile
+    case myTeam
     
     var title: String {
         switch self {
         case .games:
             return "Games"
-        case .profile:
-            return "Profile"
+        case .myTeam:
+            return "My Team"
         }
     }
 }
@@ -39,25 +39,26 @@ struct ContentView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                NavigationStack {
                     TabView(selection: $selectedTab) {
-                        GamesView()
-                            .tag(Tab.games)
-                            .tabItem {
-                                Label("Games", systemImage: "play.tv")
-                            }
-                        
                         NavigationStack {
-                            ProfileView()
-                                .tag(Tab.profile)
+                            GamesView()
+                                .navigationTitle("SATA")
                         }
+                        .tag(Tab.games)
                         .tabItem {
-                            Label("Profile", systemImage: "person.circle.fill")
+                            Label("Games", systemImage: "sportscourt.fill")
+                        }
+                        NavigationStack {
+                            MyTeamView()
+                                .navigationTitle("Porto")
+                        }
+                        .tag(Tab.myTeam)
+                        .tabItem {
+                            Label("My Team", systemImage: "star.fill")
                         }
                     }
-                    .navigationTitle(selectedTab.title)
+                    .navigationTitle("SATA")
                     .tabViewStyle(.sidebarAdaptable)
-                }
             }
             .sheet(isPresented: $showOnboarding, onDismiss: {
                 hasSeenOnboarding = true

@@ -4,6 +4,10 @@ import Foundation
 class TeamsViewModel: ObservableObject {
     @Published var teams: [Team] = []
     @Published var state: ViewState = .loading
+    
+    var teamNames: [String] {
+        teams.map { $0.name }.sorted()
+    }
 
     func fetchTeams() async {
         print("📱 Starting to fetch teams")
@@ -47,5 +51,11 @@ class TeamsViewModel: ObservableObject {
             print("❌ Network error: \(error.localizedDescription)")
             state = .error(error.localizedDescription)
         }
+    }
+    
+    func SetTeam(team: Team) {
+        //Save team id to App Storage
+        let teamId = team.id
+        UserDefaults.standard.set(teamId, forKey: "teamId")
     }
 }

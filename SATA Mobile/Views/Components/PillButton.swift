@@ -21,7 +21,7 @@ struct PillButton: View {
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 15)
-            .background(Material.thin)
+            .background(Material.ultraThin)
             .background(Color.primary.opacity(0.2)) // Use a specific background color
             .foregroundColor(.primary)
             .cornerRadius(100) // Makes it a pill shape

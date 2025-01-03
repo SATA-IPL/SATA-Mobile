@@ -61,9 +61,10 @@ struct GameCardView: View {
                     HStack {
                         
                         VStack {
-                            Text("02:10")
+                            Text(game.hour)
                                 .font(.system(.title2, weight: .bold).width(.compressed))
-                            Text("28/12/2024")
+                            let formattedDate = game.date.components(separatedBy: "-").reversed().joined(separator: "/")
+                            Text(formattedDate)
                                 .font(.system(.headline, weight: .bold).width(.compressed))
                                 .foregroundStyle(.secondary)
                         }

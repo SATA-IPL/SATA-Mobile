@@ -245,7 +245,11 @@ struct GameDetailView: View {
     
     private func additionalGameInfo(_ detailedGame: Game) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Lineups")
+            SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam)
+                .frame(height: 300)
+                .padding(.horizontal)
+
+            Text("Squads")
                 .font(.title3)
                 .fontWeight(.bold)
                 .padding(.horizontal)
@@ -382,3 +386,307 @@ struct PlayerView: View {
         }
     }
 }
+
+struct SoccerFieldView: View {
+    let homeTeam: Team
+    let awayTeam: Team
+    
+    private func calculatePosition(for position: String, index: Int, in size: CGSize, isHomeTeam: Bool) -> CGPoint {
+        let basePositions: [(CGFloat, CGFloat)] = [
+            (0.95, 0.5),     // GK
+            (0.85, 0.25),    // LB
+            (0.85, 0.4),     // LCB
+            (0.85, 0.6),     // RCB
+            (0.85, 0.75),    // RB
+            (0.70, 0.35),    // LCM
+            (0.70, 0.5),     // CM
+            (0.70, 0.65),    // RCM
+            (0.60, 0.2),     // LW - adjusted back from 0.40 to 0.52
+            (0.58, 0.5),     // ST - adjusted back from 0.40 to 0.52
+            (0.60, 0.8)      // RW - adjusted back from 0.40 to 0.52
+        ]
+
+        func mirrorPosition(_ pos: (CGFloat, CGFloat)) -> (CGFloat, CGFloat) {
+            return (1.0 - pos.0, pos.1)
+        }
+
+        let position = basePositions[min(index, basePositions.count - 1)]
+        let finalPosition = isHomeTeam ? position : mirrorPosition(position)
+        
+        // Ajusta a posição Y considerando a altura total do PlayerDot (círculo + texto)
+        let dotTotalHeight: CGFloat = 40 // altura aproximada do PlayerDot (24 do círculo + 16 do texto e espaçamento)
+        let yOffset = dotTotalHeight / 2
+        return CGPoint(
+            x: size.width * finalPosition.0,
+            y: (size.height * finalPosition.1) - yOffset
+        )
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let aspectRatio: CGFloat = 1.5 // Standard soccer field ratio
+            let width = min(geometry.size.width, geometry.size.height * aspectRatio)
+            let height = width / aspectRatio
+            
+            ZStack {
+                // Field background
+                Rectangle()
+                    .fill(Color(hex: "#2E8B57"))
+                    .overlay {
+                        // Grass pattern
+                        HStack(spacing: 0) {
+                            ForEach(0..<30) { i in
+                                Rectangle()
+                                    .fill(Color(hex: "#228B22"))
+                                    .frame(width: geometry.size.width / 30)
+                                    .opacity(i % 2 == 0 ? 0.3 : 0)
+                            }
+                        }
+                    }
+                    .overlay {
+                        SoccerFieldLines()
+                    }
+                
+                // Home team formation (left)
+                if let players = homeTeam.players?.prefix(11) {
+                    ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
+                        PlayerDot(player: player, teamColor: Color(hex: homeTeam.colors?[0] ?? "#FFFFFF"), team: homeTeam)  // Add team parameter
+                            .position(
+                                calculatePosition(
+                                    for: player.position,
+                                    index: index,
+                                    in: geometry.size,
+                                    isHomeTeam: false  // Changed from true to false
+                                )
+                            )
+                    }
+                }
+                
+                // Away team formation (right)
+                if let players = awayTeam.players?.prefix(11) {
+                    ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
+                        PlayerDot(player: player, teamColor: Color(hex: awayTeam.colors?[0] ?? "#00C0FF"), team: awayTeam)  // Add team parameter
+                            .position(
+                                calculatePosition(
+                                    for: player.position,
+                                    index: index,
+                                    in: geometry.size,
+                                    isHomeTeam: true   // Changed from false to true
+                                )
+                            )
+                    }
+                }
+            }
+            .frame(width: width, height: height)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+}
+
+struct SoccerFieldLines: View {
+    var body: some View {
+        Canvas { context, size in
+            let lineColor = Color.white
+            
+            // Outline
+            context.stroke(
+                Path { path in
+                    path.addRect(CGRect(origin: .zero, size: size))
+                },
+                with: .color(lineColor),
+                lineWidth: 2
+            )
+            
+            // Center line
+            context.stroke(
+                Path { path in
+                    path.move(to: CGPoint(x: size.width/2, y: 0))
+                    path.addLine(to: CGPoint(x: size.width/2, y: size.height))
+                },
+                with: .color(lineColor),
+                lineWidth: 2
+            )
+            
+            // Center circle
+            context.stroke(
+                Circle().path(in: CGRect(x: size.width/2 - size.height/6,
+                                       y: size.height/2 - size.height/6,
+                                       width: size.height/3,
+                                       height: size.height/3)),
+                with: .color(lineColor),
+                lineWidth: 2
+            )
+            
+            // Center dot
+            context.fill(
+                Circle().path(in: CGRect(x: size.width/2 - 4,
+                                       y: size.height/2 - 4,
+                                       width: 8,
+                                       height: 8)),
+                with: .color(lineColor)
+            )
+            
+            let penaltyAreaWidth = size.width * 0.16
+            let penaltyAreaHeight = size.height * 0.4
+            
+            // Corner arcs
+            let cornerRadius: CGFloat = size.height * 0.04
+            for (x, y) in [(0, 0), (size.width, 0), (0, size.height), (size.width, size.height)] {
+                context.stroke(
+                    Path { path in
+                        path.addArc(
+                            center: CGPoint(x: x, y: y),
+                            radius: cornerRadius,
+                            startAngle: Angle(degrees: x == 0 ? (y == 0 ? 0 : -90) : (y == 0 ? 90 : 180)),
+                            endAngle: Angle(degrees: x == 0 ? (y == 0 ? 90 : 0) : (y == 0 ? 180 : 270)),
+                            clockwise: false
+                        )
+                    },
+                    with: .color(lineColor),
+                    lineWidth: 2
+                )
+            }
+            
+            // Penalty areas
+            for isLeft in [true, false] {
+                let x = isLeft ? 0 : size.width - penaltyAreaWidth
+                let penaltyAreaY = (size.height - penaltyAreaHeight) / 2
+                
+                // Main penalty box
+                context.stroke(
+                    Path { path in
+                        path.addRect(CGRect(x: x,
+                                          y: penaltyAreaY,
+                                          width: penaltyAreaWidth,
+                                          height: penaltyAreaHeight))
+                    },
+                    with: .color(lineColor),
+                    lineWidth: 2
+                )
+                
+                // Goal box - smaller proportions
+                let goalBoxWidth = penaltyAreaWidth * 0.35
+                let goalBoxHeight = penaltyAreaHeight * 0.4
+                let goalBoxX = isLeft ? 0 : size.width - goalBoxWidth
+                let goalBoxY = (size.height - goalBoxHeight) / 2
+                context.stroke(
+                    Path { path in
+                        path.addRect(CGRect(x: goalBoxX,
+                                          y: goalBoxY,
+                                          width: goalBoxWidth,
+                                          height: goalBoxHeight))
+                    },
+                    with: .color(lineColor),
+                    lineWidth: 2
+                )
+                
+                // Penalty spot at correct FIFA distance
+                let penaltySpotX = isLeft ? (penaltyAreaWidth * 0.75) : (size.width - penaltyAreaWidth * 0.75)
+                let penaltySpotY = size.height * 0.5
+                
+                // Arc that matches FIFA specifications
+                let arcRadius = penaltyAreaWidth * 0.5  // Radius based on box width instead of height
+                
+                if isLeft {
+                    // Left penalty arc - exactly touching penalty box
+                    context.stroke(
+                        Path { path in
+                            path.addArc(
+                                center: CGPoint(x: penaltySpotX, y: penaltySpotY),
+                                radius: arcRadius,
+                                startAngle: Angle(degrees: -50),
+                                endAngle: Angle(degrees: 50),
+                                clockwise: false
+                            )
+                        },
+                        with: .color(lineColor),
+                        lineWidth: 2
+                    )
+                } else {
+                    // Right penalty arc - exactly touching penalty box
+                    context.stroke(
+                        Path { path in
+                            path.addArc(
+                                center: CGPoint(x: penaltySpotX, y: penaltySpotY),
+                                radius: arcRadius,
+                                startAngle: Angle(degrees: 130),
+                                endAngle: Angle(degrees: 230),
+                                clockwise: false
+                            )
+                        },
+                        with: .color(lineColor),
+                        lineWidth: 2
+                    )
+                }
+                
+                // Penalty spot
+                context.fill(
+                    Circle().path(in: CGRect(
+                        x: penaltySpotX - 3,
+                        y: penaltySpotY - 3,
+                        width: 6,
+                        height: 6
+                    )),
+                    with: .color(lineColor)
+                )
+            }
+        }
+    }
+}
+
+struct PlayerDot: View {
+    let player: Player
+    let teamColor: Color
+    let team: Team
+    @State private var isSheetPresented = false
+    
+    private func textColor(for backgroundColor: Color) -> Color {
+        // Convert team color to RGB components
+        let uiColor = UIColor(backgroundColor)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        // Calculate luminance using standard formula
+        let luminance = 0.299 * red + 0.587 * green + 0.114 * blue
+        
+        // Return white for dark colors, black for light colors
+        return luminance > 0.5 ? .black : .white
+    }
+    
+    var body: some View {
+        VStack(spacing: 1) {
+            Circle()
+                .fill(teamColor)
+                .frame(width: 24, height: 24)
+                .overlay {
+                    Text(player.shirtNumber)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(textColor(for: teamColor))
+                }
+                .onTapGesture {
+                    isSheetPresented.toggle()
+                }
+            
+            Text(player.name.split(separator: " ").last ?? "")
+                .font(.system(size: 8, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 4)
+                .background {
+                    Capsule()
+                        .fill(Color.black.opacity(0.6))
+                }
+        }
+        .sheet(isPresented: $isSheetPresented) {
+            NavigationStack {
+                PlayerDetailView(playerId: player.id, team: team)
+            }
+        }
+    }
+}
+
+

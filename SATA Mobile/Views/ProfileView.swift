@@ -30,44 +30,19 @@ struct ProfileView: View {
             }
             
             Section("Account") {
-                NavigationLink {
-                    Text("Profile Settings")
-                } label: {
-                    Label("Profile Settings", systemImage: "person.circle")
-                }
-                
                 Button {
                     openAppSettings()
                 } label: {
                     Label("System Settings", systemImage: "gear")
                 }
             }
-            
-            Section("Preferences") {
-                NavigationLink {
-                    Text("Appearance")
-                } label: {
-                    Label("Appearance", systemImage: "paintbrush")
-                }
-                
-                NavigationLink {
-                    Text("Language")
-                } label: {
-                    Label("Language", systemImage: "globe")
-                }
-            }
+        
             
             Section("App") {
                 NavigationLink {
                     AboutView()
                 } label: {
                     Label("About", systemImage: "info.circle")
-                }
-                
-                Button(role: .destructive) {
-                    // Handle sign out
-                } label: {
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                 }
             }
         }

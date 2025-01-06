@@ -86,7 +86,7 @@ struct GameDetailView: View {
     enum GameSection: String, CaseIterable {
         case overview = "Overview"
         case analysis = "Analysis"
-        case rosters = "Rosters"
+        case lineups = "Lineups"
     }
     @State private var selectedSection: GameSection = .overview
     
@@ -139,8 +139,8 @@ struct GameDetailView: View {
                             overviewSection
                         case .analysis:
                             analysisSection
-                        case .rosters:
-                            rostersSection
+                        case .lineups:
+                            lineupsSection
                         }
                     }
                 }
@@ -204,9 +204,6 @@ struct GameDetailView: View {
                 }
             case .loaded:
                 if let detailedGame = viewModel.game {
-                    SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam)
-                        .aspectRatio(1.5, contentMode: .fit) // This will maintain aspect ratio while filling width
-                        .padding(.horizontal)
                     
                     matchStatsCard(game)
                     eventsCard(game)
@@ -262,9 +259,13 @@ struct GameDetailView: View {
         }
     }
     
-    private var rostersSection: some View {
+    private var lineupsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let detailedGame = viewModel.game {
+                SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam, gameId: gameId)
+                    .aspectRatio(1.5, contentMode: .fit) // This will maintain aspect ratio while filling width
+                    .padding(.horizontal)
+                
                 if let players = detailedGame.homeTeam.players {
                     TeamLineupView(team: detailedGame.homeTeam, players: players, gameId: gameId)
                 }
@@ -280,7 +281,7 @@ struct GameDetailView: View {
     
     private var loadingAdditionalInfo: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Lineups")
+            Text("Loading Game Information")
                 .font(.title3)
                 .fontWeight(.bold)
                 .padding(.horizontal)
@@ -313,7 +314,7 @@ struct GameDetailView: View {
     
     private func additionalGameInfo(_ detailedGame: Game) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam)
+            SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam, gameId: gameId)
                 .frame(height: 300)
                 .padding(.horizontal)
             
@@ -496,6 +497,7 @@ class FieldBackgroundModel: ObservableObject {
 struct SoccerFieldView: View {
     let homeTeam: Team
     let awayTeam: Team
+    let gameId: Int
     @StateObject private var backgroundModel = FieldBackgroundModel()
     @State private var playerPositions: [String: CGPoint] = [:]
     
@@ -504,8 +506,8 @@ struct SoccerFieldView: View {
         guard playerPositions.isEmpty else { return } // Only calculate once
         
         let basePositions: [(CGFloat, CGFloat)] = [
-            (0.95, 0.5), (0.85, 0.25), (0.85, 0.4), (0.85, 0.6), (0.85, 0.75),
-            (0.70, 0.35), (0.70, 0.5), (0.70, 0.65), (0.60, 0.2), (0.58, 0.5), (0.60, 0.8)
+            (0.95, 0.5), (0.85, 0.20), (0.85, 0.4), (0.85, 0.6), (0.85, 0.80),
+            (0.70, 0.30), (0.70, 0.5), (0.70, 0.70), (0.60, 0.15), (0.58, 0.5), (0.60, 0.85)
         ]
         
         let width = size.width
@@ -562,7 +564,8 @@ struct SoccerFieldView: View {
                     homeColor: Color(hex: homeTeam.colors?[0] ?? "#FFFFFF"),
                     awayColor: Color(hex: awayTeam.colors?[0] ?? "#00C0FF"),
                     homeTeam: homeTeam,
-                    awayTeam: awayTeam
+                    awayTeam: awayTeam,
+                    gameId: gameId
                 )
                 .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
             }
@@ -588,13 +591,14 @@ struct PlayersLayer: View {
     let awayColor: Color
     let homeTeam: Team
     let awayTeam: Team
+    let gameId: Int
     
     var body: some View {
         ZStack {
             // Home team players
             ForEach(homePlayers, id: \.1.id) { index, player in
                 if let position = positions["home_\(index)"] {
-                    PlayerDot(player: player, teamColor: homeColor, team: homeTeam, gameId: nil)
+                    PlayerDot(player: player, teamColor: homeColor, team: homeTeam, gameId: gameId)
                         .position(position)
                 }
             }
@@ -602,7 +606,7 @@ struct PlayersLayer: View {
             // Away team players
             ForEach(awayPlayers, id: \.1.id) { index, player in
                 if let position = positions["away_\(index)"] {
-                    PlayerDot(player: player, teamColor: awayColor, team: awayTeam, gameId: nil)
+                    PlayerDot(player: player, teamColor: awayColor, team: awayTeam, gameId: gameId)
                         .position(position)
                 }
             }
@@ -766,7 +770,7 @@ struct PlayerDot: View {
     let player: Player
     let teamColor: Color
     let team: Team
-    let gameId: Int?  // Add optional gameId parameter
+    let gameId: Int  // Add optional gameId parameter
     @State private var isSheetPresented = false
     
     var body: some View {

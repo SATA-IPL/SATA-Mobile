@@ -5,9 +5,12 @@ import SwiftUI
 @MainActor
 class GameDetailViewModel: ObservableObject {
     @Published var game: Game?
+    @Published var teamGameStats: TeamGameStats?
     @Published var state: ViewState = .loading
     @Published var isLoading = false
     @Published var response: LocalizedStringKey = "How can I help you today?"
+    @Published var events: [Event] = []
+    @Published var additionalDataState: ViewState = .loading  // Add this new property
     
     private static let config = GenerationConfig(
         temperature: 1,
@@ -82,4 +85,30 @@ class GameDetailViewModel: ObservableObject {
             isLoading = false
         }
     }
+    
+    func fetchEvents(gameId: Int) async {
+            print("📱 Starting to fetch events for game ID: \(gameId)")
+            
+            guard let url = URL(string: "http://144.24.177.214:5000/events/\(gameId)") else {
+                print("❌ Invalid URL for events endpoint")
+                return
+            }
+            
+            do {
+                print("🌐 Fetching events from network...")
+                let (data, _) = try await URLSession.shared.data(from: url)
+                print("✅ Events data received: \(data.count) bytes")
+                
+                // Print received JSON for debugging
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📄 Received JSON: \(jsonString)")
+                }
+                
+                events = try JSONDecoder().decode([Event].self, from: data)
+                print("📊 Successfully decoded \(events.count) events")
+            } catch {
+                print("❌ Error fetching events: \(error)")
+            }
+        }
 }
+

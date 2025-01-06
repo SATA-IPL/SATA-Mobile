@@ -3,13 +3,73 @@ import AVKit
 import GoogleGenerativeAI
 import ActivityKit
 
+
+enum EventType: String, CaseIterable, Identifiable {
+    case goal = "Goal"
+    case assist = "Assist"
+    case finish = "Finish"
+    case corner = "Corner"
+    case foul = "Foul"
+    case freeKick = "Free kick"
+    case defense = "Defense"
+    case interception = "Interception"
+    case offside = "Offside"
+    case tackle = "Tackle"
+    case penalty = "Penalty"
+    case substitution = "Substitution"
+    case yellowCard = "Yellow Card"
+    case redCard = "Red Card"
+    
+    var icon: String {
+        switch self {
+        case .goal: return "soccerball"
+        case .assist: return "arrow.right"
+        case .finish: return "target"
+        case .corner: return "flag.fill"
+        case .foul: return "exclamationmark.triangle"
+        case .freeKick: return "dot.circle.and.hand.point.up.left.fill"
+        case .defense: return "shield.fill"
+        case .interception: return "arrow.up.right.and.arrow.down.left"
+        case .offside: return "flag.2.crossed"
+        case .tackle: return "figure.soccer"
+        case .penalty: return "exclamationmark.circle"
+        case .substitution: return "arrow.left.arrow.right"
+        case .yellowCard: return "square.fill"
+        case .redCard: return "square.fill"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .goal: return .green
+        case .assist: return .blue
+        case .finish: return .orange
+        case .corner: return .mint
+        case .foul: return .red
+        case .freeKick: return .purple
+        case .defense: return .indigo
+        case .interception: return .teal
+        case .offside: return .gray
+        case .tackle: return .brown
+        case .penalty: return .pink
+        case .substitution: return .blue
+        case .yellowCard: return .yellow
+        case .redCard: return .red
+        }
+    }
+    
+    var id: String { self.rawValue }
+}
+
 struct GameDetailView: View {
     let game: Game
     let gameId: Int
+    let teamGameStats: TeamGameStats
     @StateObject private var viewModel = GameDetailViewModel()
     var animation: Namespace.ID
     @State private var showStadium = false
     @State private var showVideoPlayer = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     @State var userPrompt = ""
     @State private var isTextExpanded = false
@@ -128,6 +188,7 @@ struct GameDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.fetchGameDetail(id: gameId)
+            await viewModel.fetchEvents(gameId: gameId)
             if let game = viewModel.game {
                 //print("Fetched game details:", game)
                 // Start live activity for demo purposes, regardless of game state
@@ -171,9 +232,8 @@ struct GameDetailView: View {
                 }
             case .loaded:
                 if let detailedGame = viewModel.game {
-                    
                     matchStatsCard(game)
-                    eventsCard(game)
+                    eventsCard(game, viewModel)  // Pass viewModel here
                 }
             }
         }
@@ -738,7 +798,7 @@ struct PlayerDot: View {
     let player: Player
     let teamColor: Color
     let team: Team
-    let gameId: Int  // Add optional gameId parameter
+    let gameId: Int  // Add gameId parameter
     @State private var isSheetPresented = false
     
     var body: some View {
@@ -1011,18 +1071,34 @@ struct FormIndicator: View {
 }
 
 // Modify eventsCard to include game parameter
-private func eventsCard(_ game: Game) -> some View {
+private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel) -> some View {
     InfoCard(title: "Key Events", icon: "clock.fill") {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(["45' Goal - João Félix", "67' Yellow Card - Nuno Tavares", "89' Substitution"], id: \.self) { event in
-                HStack(alignment: .center, spacing: 12) {
-                    Circle()
-                        .fill(.secondary.opacity(0.2))
-                        .frame(width: 6, height: 6)
-                    Text(event)
-                        .font(.system(.subheadline))
-                        .foregroundStyle(.secondary)
+        ScrollView {
+            HStack(alignment: .top, spacing: 30) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Match Timeline")
+                        .font(.title2.bold())
+                    
+                    if viewModel.events.isEmpty {
+                        ContentUnavailableView {
+                            Label("No Events", systemImage: "calendar.badge.exclamationmark")
+                        } description: {
+                            Text("There are no events to display at this time.")
+                        }
+                    } else {
+                        ForEach(viewModel.events.sorted(by: { $0.minute > $1.minute })) { event in
+                            // Convert string ID to Int for comparison
+                            let teamId = Int(game.homeTeam.id) ?? 0
+                            let team = event.team_id == teamId ? game.homeTeam : game.awayTeam
+                            TimelineEventView(
+                                event: EventType(rawValue: event.event_type) ?? .goal,
+                                description: "\(team.name) - \(event.event_type)",
+                                teamColor: event.team_colors[0]
+                            )
+                        }
+                    }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -1102,3 +1178,4 @@ private func formGuideCard(_ game: Game) -> some View {
         }
     }
 }
+

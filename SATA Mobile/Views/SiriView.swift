@@ -26,7 +26,7 @@ struct SiriView: View {
                 Text("Siri")
                     .font(.system(size: 32, weight: .bold))
                 
-                Text("Use Siri to ask questions about your next team games or to open the app. Just say \"Hey Siri, what can I do here?\" to get started.")
+                Text("Use Siri to ask questions about your next team games, open the app, or integrate with Shortcuts for automated workflows. Just say \"Hey Siri, what can I do here?\" to get started.")
                     .font(.system(size: 16))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)

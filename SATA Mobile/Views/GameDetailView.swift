@@ -118,7 +118,6 @@ struct GameDetailView: View {
                         TeamView(team: game.awayTeam, score: game.awayScore)
                     }
                     .padding(.horizontal, 35)
-                    AddToShortcutsButton()
                     if(game.state == "live" || game.state == "finished"){
                         PillButton(
                             action: { showVideoPlayer.toggle() },

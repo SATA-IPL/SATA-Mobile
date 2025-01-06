@@ -29,11 +29,17 @@ struct ProfileView: View {
                 }
             }
             
-            Section("Account") {
+            Section("Settings") {
                 Button {
-                    openAppSettings()
+                    openSystemSettings()
                 } label: {
                     Label("System Settings", systemImage: "gear")
+                }
+                
+                Button {
+                    openShortcuts()
+                } label: {
+                    Label("Shortcuts", systemImage: "app.connected.to.app.below.fill")
                 }
             }
         
@@ -68,10 +74,18 @@ struct ProfileView: View {
         }
     }
     
-    func openAppSettings() {
+    func openSystemSettings() {
         if let appSettingsURL = URL(string: UIApplication.openSettingsURLString) {
             if UIApplication.shared.canOpenURL(appSettingsURL) {
                 UIApplication.shared.open(appSettingsURL, options: [:], completionHandler: nil)
+            }
+        }
+    }
+    
+    func openShortcuts() {
+        if let shortcutsURL = URL(string: "shortcuts://") {
+            if UIApplication.shared.canOpenURL(shortcutsURL) {
+                UIApplication.shared.open(shortcutsURL, options: [:], completionHandler: nil)
             }
         }
     }

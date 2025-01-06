@@ -1,31 +1,28 @@
-//
-//  WatchLiveActivityWelcomeView.swift
-//  SATA Mobile
-//
-//  Created by João Franco on 05/01/2025.
-//
-
 import SwiftUI
 import OnBoardingKit
 
-struct WatchLiveActivityWelcomeView: View {
-    let onComplete: () -> Void
+struct WelcomeView: View {
+    @Binding var path: NavigationPath
+    @Environment(\.dismiss) private var dismiss
+    let onDismiss: () -> Void
     
     var body: some View {
-        VStack(spacing: 24) {
-            // Watch illustration
-            Image("WatchLiveActivity")
+        VStack(spacing: 32) {
+            Spacer()
+            
+            // App Icon
+            Image("Icon")
                 .resizable()
-                .aspectRatio(contentMode: .fill)
-                .background(Color.gray.opacity(0.2))
-                .frame(height: 275)
+                .frame(width: 120, height: 120)
+                .cornerRadius(24)
+                .padding(.bottom, 16)
             
             // Main content
             VStack(spacing: 16) {
-                Text("Apple Watch Updates")
+                Text("Welcome to SATA Mobile")
                     .font(.system(size: 32, weight: .bold))
                 
-                Text("Get live game updates right on your wrist. Follow scores, match progress, and important events with a quick glance at your Apple Watch.")
+                Text("Your ultimate companion for tracking games, scores, and team updates. Get ready for an enhanced sports experience.")
                     .font(.system(size: 16))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
@@ -35,16 +32,16 @@ struct WatchLiveActivityWelcomeView: View {
             
             // Footer content
             VStack(spacing: 20) {
-                Text("Requires Apple Watch with watchOS 11 or later. Make sure your Watch is paired and notifications are enabled.")
+                Text("Discover all the features we've prepared to keep you connected with your favorite teams.")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                 
                 Button(action: {
-                    onComplete()
+                    path.append(OnboardingPage.siri)
                 }) {
-                    Text("Get Started")
+                    Text("See Features")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -53,9 +50,14 @@ struct WatchLiveActivityWelcomeView: View {
                         .cornerRadius(12)
                 }
                 .padding(.horizontal, 24)
+
+                Button("Go to App") {
+                    onDismiss()
+                }
+                .font(.system(size: 17))
+                .foregroundColor(.accent)
                 .padding(.bottom, 16)
             }
         }
-        .ignoresSafeArea(edges: .top)
     }
 }

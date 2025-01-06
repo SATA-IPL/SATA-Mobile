@@ -45,23 +45,31 @@ struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var path = NavigationPath()
     
+    func handleCompletion() {
+        dismiss()
+    }
+    
     var body: some View {
         NavigationStack(path: $path) {
-            SiriView(path: $path)
+            WelcomeView(path: $path, onDismiss: handleCompletion)
+                .navigationBarBackButtonHidden()
                 .navigationDestination(for: OnboardingPage.self) { page in
-                    switch page {
-                    case .siri:
-                        SiriView(path: $path)
-                    case .dynamicIsland:
-                        DynamicIslandWelcomeView(path: $path)
-                    case .standBy:
-                        StandByWelcomeView(path: $path)
-                    case .watchLiveActivity:
-                        WatchLiveActivityWelcomeView(path: $path)
-                    default:
-                        EmptyView()
+                    Group {
+                        switch page {
+                        case .welcome:
+                            WelcomeView(path: $path, onDismiss: handleCompletion)
+                        case .siri:
+                            SiriView(path: $path)
+                        case .dynamicIsland:
+                            DynamicIslandWelcomeView(path: $path)
+                        case .standBy:
+                            StandByWelcomeView(path: $path)
+                        case .watchLiveActivity:
+                            WatchLiveActivityWelcomeView(onComplete: handleCompletion)
+                        }
                     }
                 }
         }
+        .interactiveDismissDisabled()
     }
 }

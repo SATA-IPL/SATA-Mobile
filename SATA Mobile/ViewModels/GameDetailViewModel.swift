@@ -1,9 +1,29 @@
 import Foundation
+import GoogleGenerativeAI
+import SwiftUI
 
 @MainActor
 class GameDetailViewModel: ObservableObject {
     @Published var game: Game?
     @Published var state: ViewState = .loading
+    @Published var isLoading = false
+    @Published var response: LocalizedStringKey = "How can I help you today?"
+    
+    private static let config = GenerationConfig(
+        temperature: 1,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+        responseMIMEType: "text/plain"
+    )
+    
+    lazy var model: GenerativeModel = {
+        GenerativeModel(
+            name: "gemini-2.0-flash-exp",
+            apiKey: APIKey.default,
+            generationConfig: GameDetailViewModel.config
+        )
+    }()
     
     func fetchGameDetail(id: Int) async {
         print("📱 Starting to fetch game details for ID: \(id)")
@@ -46,6 +66,20 @@ class GameDetailViewModel: ObservableObject {
         } catch {
             print("❌ Network error: \(error.localizedDescription)")
             state = .error(error.localizedDescription)
+        }
+    }
+    
+    func generateResponse(userPrompt: String) async {
+        isLoading = true
+        response = ""
+        
+        do {
+            let result = try await model.generateContent(userPrompt)
+            isLoading = false
+            response = LocalizedStringKey(result.text ?? "No response found")
+        } catch {
+            response = "Something went wrong! \n\(error.localizedDescription)"
+            isLoading = false
         }
     }
 }

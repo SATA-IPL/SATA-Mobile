@@ -11,45 +11,13 @@ struct GameDetailView: View {
     @State private var showStadium = false
     @State private var showVideoPlayer = false
     
-    //Gemini
-    static let config = GenerationConfig(
-        temperature: 1,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
-        responseMIMEType: "text/plain"
-    )
-    
-    let model = GenerativeModel(
-        name: "gemini-2.0-flash-exp",
-        apiKey: APIKey.default,
-        generationConfig: Self.config
-    )
     @State var userPrompt = ""
-    @State var response: LocalizedStringKey = "How can I help you today?"
-    @State var isLoading = false
     @State private var isTextExpanded = false
     @State private var showChat = false
     @State private var messageText = ""
     @State private var isListening = false
     @State private var animationScale: CGFloat = 1.0
     @State private var activity: Activity<GameActivityAttributes>?
-    
-    func generateResponse(){
-        isLoading = true;
-        response = ""
-        
-        Task {
-            do {
-                let result = try await model.generateContent(userPrompt)
-                isLoading = false
-                response = LocalizedStringKey(result.text ?? "No response found")
-                userPrompt = ""
-            } catch {
-                response = "Something went wrong! \n\(error.localizedDescription)"
-            }
-        }
-    }
     
     private func startLiveActivity() {
         Task {
@@ -153,7 +121,7 @@ struct GameDetailView: View {
             }
         }
         .fullScreenCover(isPresented: $showVideoPlayer) {
-            VideoPlayerView(videoURL: URL(string: game.videoUrl!)!, title: "Title", subtitle: "Subtitle")
+            VideoPlayerView(videoURL: URL(string: "https://github.com/FranciscoMarques1/Video_test/raw/refs/heads/main/real%20video.mp4")!, title: "Title", subtitle: "Subtitle")
                 .presentationBackground(.clear)
                 .ignoresSafeArea()
         }
@@ -186,7 +154,7 @@ struct GameDetailView: View {
             }
         }
         .fullScreenCover(isPresented: $showChat) {
-            ChatView(game: game, model: model, isPresented: $showChat)
+            ChatView(game: game, model: viewModel.model, isPresented: $showChat)
         }
     }
     
@@ -213,7 +181,6 @@ struct GameDetailView: View {
     
     private var analysisSection: some View {
         VStack(spacing: 20) {
-            // Existing analysis card
             VStack(alignment: .leading) {
                 HStack {
                     Text("Game Analysis")
@@ -226,7 +193,7 @@ struct GameDetailView: View {
                 .padding(.horizontal)
                 
                 ZStack {
-                    if isLoading {
+                    if viewModel.isLoading {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(0..<3) { _ in
                                 ShimmerLoadingView()
@@ -236,7 +203,7 @@ struct GameDetailView: View {
                         }
                         .padding()
                     } else {
-                        Text(response)
+                        Text(viewModel.response)
                             .font(.body)
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -247,9 +214,11 @@ struct GameDetailView: View {
                 .padding(.horizontal)
             }
             .onAppear {
-                if response == "How can I help you today?" {
+                if viewModel.response == "How can I help you today?" {
                     userPrompt = "Write a brief, engaging historical highlight about past matches between \(game.homeTeam.name) and \(game.awayTeam.name) with interesting facts for a description card. Just include response text. No Title"
-                    generateResponse()
+                    Task {
+                        await viewModel.generateResponse(userPrompt: userPrompt)
+                    }
                 }
             }
             

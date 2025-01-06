@@ -1,4 +1,5 @@
 import AppIntents
+import SwiftUI
 
 struct LaunchAppIntent: AppIntent {
     static var title: LocalizedStringResource = "Launch My App"
@@ -28,14 +29,84 @@ struct NextTeamMatchIntent: AppIntent {
     static var title: LocalizedStringResource = "Next Team Match"
     static var openAppWhenRun: Bool = false
     
-    static var description: String = "Tells you when is your team's next match"
+    static var description: String = "Tells you when your team's next match is."
 
+    @Parameter(title: "Response")
+    var response: String
+    
+    init() {
+        self.response = "How can I help you today?"
+    }
+    
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        // This is a placeholder - you should get this data from your GamesViewModel
-        let nextMatch = "Tomorrow at 8 PM against Benfica" // Replace with actual data
+        await fetchUpcomingGameOfFavouriteTeam()
+        return .result(dialog: IntentDialog(stringLiteral: response))
+    }
+
+    func fetchUpcomingGameOfFavouriteTeam() async {
+        let favoriteTeamId = UserDefaults.standard.integer(forKey: "teamId")
+        if (favoriteTeamId != 0) {
+            await fetchUpcomingGame(teamId: favoriteTeamId)
+        } else {
+            response = "Please select a favorite team on SATA first."
+        }
+    }
+    
+    func fetchUpcomingGame(teamId: Int) async {
+        print("📱 Fetching upcoming game for team ID: \(teamId)")
         
-        return .result(dialog: IntentDialog(stringLiteral: "Your next match is \(nextMatch)"))
+        guard let url = URL(string: "http://144.24.177.214:5000/upcoming/\(teamId)") else {
+            print("❌ Invalid URL for upcoming game endpoint")
+            return
+        }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            struct UpcomingGame: Codable {
+                let away_team: Team
+                let home_team: Team
+                let date: String
+                let hour: String
+                
+                struct Team: Codable {
+                    let name: String
+                }
+            }
+            
+            let game = try JSONDecoder().decode(UpcomingGame.self, from: data)
+            
+            // Format date for natural language
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let date = dateFormatter.date(from: game.date) ?? Date()
+            
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let gameDay = calendar.startOfDay(for: date)
+            
+            let dayDifference = calendar.dateComponents([.day], from: today, to: gameDay).day ?? 0
+            
+            let dayText: String
+            switch dayDifference {
+            case 0: dayText = "Today"
+            case 1: dayText = "Tomorrow"
+            default: 
+                dateFormatter.dateFormat = "EEEE, MMMM d"
+                dayText = "on \(dateFormatter.string(from: date))"
+            }
+            
+            // Generate natural language response
+            let opponent = game.away_team.name == "Sporting CP" ? game.home_team.name : game.away_team.name
+            let message = "Your next match is \(dayText) at \(game.hour) against \(opponent)"
+            
+            response = message
+            
+        } catch {
+            print("❌ Error fetching upcoming game: \(error.localizedDescription)")
+            response = "Sorry, I couldn't fetch the upcoming game information."
+        }
     }
 }
 

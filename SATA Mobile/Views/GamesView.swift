@@ -2,8 +2,10 @@ import SwiftUI
 
 struct GamesView: View {
     @StateObject private var viewModel = GamesViewModel()
+    @StateObject private var teamsViewModel = TeamsViewModel()
     @Namespace private var namespace
     @State private var hasInitiallyFetched = false
+    @State private var selectedTeamFilter: Team? = nil
     
     var body: some View {
             Group { content }
@@ -16,6 +18,11 @@ struct GamesView: View {
                     )
                     .ignoresSafeArea()
                 )
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        teamFilterMenu
+                    }
+                }
     }
     
     // MARK: - Private Methods
@@ -55,18 +62,33 @@ struct GamesView: View {
     }
     
     private var gamesList: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(viewModel.games) { game in
-                    GameCardView(game: game)
-                        .matchedGeometryEffect(id: game.id, in: namespace)
+        Group {
+            if filteredGames.isEmpty {
+                filteredEmptyStateView
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        ForEach(filteredGames) { game in
+                            GameCardView(game: game)
+                                .matchedGeometryEffect(id: game.id, in: namespace)
+                        }
+                    }
+                    .padding()
+                }
+                .background(.clear)
+                .refreshable {
+                    await viewModel.fetchGames()
                 }
             }
-            .padding()
         }
-        .background(.clear)
-        .refreshable {
-            await viewModel.fetchGames()
+    }
+
+    private var filteredGames: [Game] {
+        guard let selectedTeam = selectedTeamFilter else {
+            return viewModel.games
+        }
+        return viewModel.games.filter { game in
+            game.homeTeam.id == selectedTeam.id || game.awayTeam.id == selectedTeam.id
         }
     }
     
@@ -87,9 +109,85 @@ struct GamesView: View {
     
     private var emptyStateView: some View {
         ContentUnavailableView {
-            Label("No Games", systemImage: "sportscourt")
+            Label("No Games Scheduled", systemImage: "sportscourt")
         } description: {
-            Text("Check back later for upcoming games")
+            Text("There are currently no games scheduled.\nCheck back later for upcoming matches.")
+        } actions: {
+            Button("Refresh") {
+                Task { @MainActor in
+                    await viewModel.fetchGames()
+                }
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+    
+    private var filteredEmptyStateView: some View {
+        ContentUnavailableView {
+            Label("No Games Found", systemImage: "magnifyingglass")
+        } description: {
+            if let team = selectedTeamFilter {
+                Text("There are no games scheduled for \(team.name).\nTry selecting a different team.")
+            } else {
+                Text("No games match your current filter.\nTry adjusting your selection.")
+            }
+        } actions: {
+            Button("Clear Filter") {
+                selectedTeamFilter = nil
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+    
+    private var teamFilterMenu: some View {
+        Menu {
+            Button {
+                selectedTeamFilter = nil
+            } label: {
+                HStack {
+                    Text("All Teams")
+                    if selectedTeamFilter == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+            
+            if let favoriteTeamId = UserDefaults.standard.string(forKey: "teamId"),
+               let favoriteTeam = teamsViewModel.teams.first(where: { $0.id == favoriteTeamId }) {
+                Button {
+                    selectedTeamFilter = favoriteTeam
+                } label: {
+                    HStack {
+                        Text(favoriteTeam.name)
+                        Image(systemName: "star.fill")
+                        if selectedTeamFilter?.id == favoriteTeam.id {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+            
+            Divider()
+            
+            ForEach(teamsViewModel.teams.sorted(by: { $0.name < $1.name }), id: \.id) { team in
+                Button {
+                    selectedTeamFilter = team
+                } label: {
+                    HStack {
+                        Text(team.name)
+                        if selectedTeamFilter?.id == team.id {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+        }
+        .onAppear {
+            Task {
+                await teamsViewModel.fetchTeams()
+            }
         }
     }
 }

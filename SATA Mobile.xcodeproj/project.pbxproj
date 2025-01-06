@@ -9,9 +9,21 @@
 /* Begin PBXBuildFile section */
 		160182952D20CA46009DA2EF /* BezelKit in Frameworks */ = {isa = PBXBuildFile; productRef = 160182942D20CA46009DA2EF /* BezelKit */; };
 		161BCB812D25BA8900FA776A /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = 161BCB802D25BA8900FA776A /* GoogleGenerativeAI */; };
+		16A657A22D2AC69200A623D8 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = 16A657A12D2AC69200A623D8 /* Shimmer */; };
+		16A657DC2D2ADFAA00A623D8 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16A657B92D2ADC0B00A623D8 /* WidgetKit.framework */; };
+		16A657DD2D2ADFAA00A623D8 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16A657BB2D2ADC0B00A623D8 /* SwiftUI.framework */; };
+		16A657E82D2ADFAC00A623D8 /* SATA_LiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 16A657DB2D2ADFAA00A623D8 /* SATA_LiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		16A658242D2B5D3E00A623D8 /* OnBoardingKit in Frameworks */ = {isa = PBXBuildFile; productRef = 16A658232D2B5D3E00A623D8 /* OnBoardingKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		16A657E62D2ADFAC00A623D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 16ECB2DB2D1DD9D200367F2A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 16A657DA2D2ADFAA00A623D8;
+			remoteInfo = SATA_LiveActivityExtension;
+		};
 		16ECB2F72D1DD9D400367F2A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 16ECB2DB2D1DD9D200367F2A /* Project object */;
@@ -28,15 +40,63 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		16A657D22D2ADC0D00A623D8 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				16A657E82D2ADFAC00A623D8 /* SATA_LiveActivityExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		16ECB2E32D1DD9D200367F2A /* SATA Mobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SATA Mobile.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		16A657B92D2ADC0B00A623D8 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		16A657BB2D2ADC0B00A623D8 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		16A657DB2D2ADFAA00A623D8 /* SATA_LiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SATA_LiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		16A657F22D2AE64600A623D8 /* SATA_LiveActivityExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SATA_LiveActivityExtension.entitlements; sourceTree = "<group>"; };
+		16ECB2E32D1DD9D200367F2A /* SATA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SATA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		16ECB2F62D1DD9D400367F2A /* SATA MobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SATA MobileTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		16ECB3002D1DD9D400367F2A /* SATA MobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SATA MobileUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		16A657E92D2ADFAC00A623D8 /* Exceptions for "SATA_LiveActivity" folder in "SATA_LiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 16A657DA2D2ADFAA00A623D8 /* SATA_LiveActivityExtension */;
+		};
+		16A658062D2AF10600A623D8 /* Exceptions for "SATA Mobile" folder in "SATA_LiveActivityExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Extensions/ColorExtension.swift,
+				Models/GameActivityAttributes.swift,
+				ShortcutsProvider.swift,
+			);
+			target = 16A657DA2D2ADFAA00A623D8 /* SATA_LiveActivityExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		16A657DE2D2ADFAA00A623D8 /* SATA_LiveActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				16A657E92D2ADFAC00A623D8 /* Exceptions for "SATA_LiveActivity" folder in "SATA_LiveActivityExtension" target */,
+			);
+			path = SATA_LiveActivity;
+			sourceTree = "<group>";
+		};
 		16ECB2E52D1DD9D200367F2A /* SATA Mobile */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				16A658062D2AF10600A623D8 /* Exceptions for "SATA Mobile" folder in "SATA_LiveActivityExtension" target */,
+			);
 			path = "SATA Mobile";
 			sourceTree = "<group>";
 		};
@@ -53,10 +113,21 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		16A657D82D2ADFAA00A623D8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				16A657DD2D2ADFAA00A623D8 /* SwiftUI.framework in Frameworks */,
+				16A657DC2D2ADFAA00A623D8 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		16ECB2E02D1DD9D200367F2A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				16A658242D2B5D3E00A623D8 /* OnBoardingKit in Frameworks */,
+				16A657A22D2AC69200A623D8 /* Shimmer in Frameworks */,
 				160182952D20CA46009DA2EF /* BezelKit in Frameworks */,
 				161BCB812D25BA8900FA776A /* GoogleGenerativeAI in Frameworks */,
 			);
@@ -79,12 +150,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		16A657B82D2ADC0B00A623D8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				16A657B92D2ADC0B00A623D8 /* WidgetKit.framework */,
+				16A657BB2D2ADC0B00A623D8 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		16ECB2DA2D1DD9D200367F2A = {
 			isa = PBXGroup;
 			children = (
+				16A657F22D2AE64600A623D8 /* SATA_LiveActivityExtension.entitlements */,
 				16ECB2E52D1DD9D200367F2A /* SATA Mobile */,
 				16ECB2F92D1DD9D400367F2A /* SATA MobileTests */,
 				16ECB3032D1DD9D400367F2A /* SATA MobileUITests */,
+				16A657DE2D2ADFAA00A623D8 /* SATA_LiveActivity */,
+				16A657B82D2ADC0B00A623D8 /* Frameworks */,
 				16ECB2E42D1DD9D200367F2A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -92,9 +175,10 @@
 		16ECB2E42D1DD9D200367F2A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				16ECB2E32D1DD9D200367F2A /* SATA Mobile.app */,
+				16ECB2E32D1DD9D200367F2A /* SATA.app */,
 				16ECB2F62D1DD9D400367F2A /* SATA MobileTests.xctest */,
 				16ECB3002D1DD9D400367F2A /* SATA MobileUITests.xctest */,
+				16A657DB2D2ADFAA00A623D8 /* SATA_LiveActivityExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -102,6 +186,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		16A657DA2D2ADFAA00A623D8 /* SATA_LiveActivityExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 16A657EA2D2ADFAC00A623D8 /* Build configuration list for PBXNativeTarget "SATA_LiveActivityExtension" */;
+			buildPhases = (
+				16A657D72D2ADFAA00A623D8 /* Sources */,
+				16A657D82D2ADFAA00A623D8 /* Frameworks */,
+				16A657D92D2ADFAA00A623D8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				16A657DE2D2ADFAA00A623D8 /* SATA_LiveActivity */,
+			);
+			name = SATA_LiveActivityExtension;
+			packageProductDependencies = (
+			);
+			productName = SATA_LiveActivityExtension;
+			productReference = 16A657DB2D2ADFAA00A623D8 /* SATA_LiveActivityExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		16ECB2E22D1DD9D200367F2A /* SATA Mobile */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 16ECB30A2D1DD9D400367F2A /* Build configuration list for PBXNativeTarget "SATA Mobile" */;
@@ -109,10 +215,12 @@
 				16ECB2DF2D1DD9D200367F2A /* Sources */,
 				16ECB2E02D1DD9D200367F2A /* Frameworks */,
 				16ECB2E12D1DD9D200367F2A /* Resources */,
+				16A657D22D2ADC0D00A623D8 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				16A657E72D2ADFAC00A623D8 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				16ECB2E52D1DD9D200367F2A /* SATA Mobile */,
@@ -121,9 +229,11 @@
 			packageProductDependencies = (
 				160182942D20CA46009DA2EF /* BezelKit */,
 				161BCB802D25BA8900FA776A /* GoogleGenerativeAI */,
+				16A657A12D2AC69200A623D8 /* Shimmer */,
+				16A658232D2B5D3E00A623D8 /* OnBoardingKit */,
 			);
 			productName = "SATA Mobile";
-			productReference = 16ECB2E32D1DD9D200367F2A /* SATA Mobile.app */;
+			productReference = 16ECB2E32D1DD9D200367F2A /* SATA.app */;
 			productType = "com.apple.product-type.application";
 		};
 		16ECB2F52D1DD9D400367F2A /* SATA MobileTests */ = {
@@ -182,6 +292,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					16A657DA2D2ADFAA00A623D8 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					16ECB2E22D1DD9D200367F2A = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -207,6 +320,8 @@
 			packageReferences = (
 				160182932D20CA46009DA2EF /* XCRemoteSwiftPackageReference "BezelKit" */,
 				161BCB7F2D25BA8900FA776A /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
+				16A657A02D2AC69200A623D8 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
+				16A658222D2B5D3E00A623D8 /* XCRemoteSwiftPackageReference "OnBoardingKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16ECB2E42D1DD9D200367F2A /* Products */;
@@ -216,11 +331,19 @@
 				16ECB2E22D1DD9D200367F2A /* SATA Mobile */,
 				16ECB2F52D1DD9D400367F2A /* SATA MobileTests */,
 				16ECB2FF2D1DD9D400367F2A /* SATA MobileUITests */,
+				16A657DA2D2ADFAA00A623D8 /* SATA_LiveActivityExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		16A657D92D2ADFAA00A623D8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		16ECB2E12D1DD9D200367F2A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -245,6 +368,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		16A657D72D2ADFAA00A623D8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		16ECB2DF2D1DD9D200367F2A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -269,6 +399,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		16A657E72D2ADFAC00A623D8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 16A657DA2D2ADFAA00A623D8 /* SATA_LiveActivityExtension */;
+			targetProxy = 16A657E62D2ADFAC00A623D8 /* PBXContainerItemProxy */;
+		};
 		16ECB2F82D1DD9D400367F2A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 16ECB2E22D1DD9D200367F2A /* SATA Mobile */;
@@ -282,6 +417,67 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		16A657EB2D2ADFAC00A623D8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = SATA_LiveActivityExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BFJTBBXTZ9;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SATA_LiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SATA_LiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.joaofranco.SATA-Mobile.SATA-LiveActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		16A657EC2D2ADFAC00A623D8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = SATA_LiveActivityExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BFJTBBXTZ9;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SATA_LiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SATA_LiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.joaofranco.SATA-Mobile.SATA-LiveActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		16ECB3082D1DD9D400367F2A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -402,6 +598,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "SATA Mobile/SATA_Mobile.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SATA Mobile/Preview Content\"";
@@ -410,6 +607,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SATA-Mobile-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = SATA;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -426,7 +626,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.joaofranco.SATA-Mobile";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = SATA;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -442,6 +643,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "SATA Mobile/SATA_Mobile.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SATA Mobile/Preview Content\"";
@@ -450,6 +652,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SATA-Mobile-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = SATA;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -466,7 +671,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.joaofranco.SATA-Mobile";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = SATA;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -569,6 +775,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		16A657EA2D2ADFAC00A623D8 /* Build configuration list for PBXNativeTarget "SATA_LiveActivityExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				16A657EB2D2ADFAC00A623D8 /* Debug */,
+				16A657EC2D2ADFAC00A623D8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		16ECB2DE2D1DD9D200367F2A /* Build configuration list for PBXProject "SATA Mobile" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -624,6 +839,22 @@
 				minimumVersion = 0.5.6;
 			};
 		};
+		16A657A02D2AC69200A623D8 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/markiv/SwiftUI-Shimmer";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
+		16A658222D2B5D3E00A623D8 /* XCRemoteSwiftPackageReference "OnBoardingKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mlbonniec/OnBoardingKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -636,6 +867,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 161BCB7F2D25BA8900FA776A /* XCRemoteSwiftPackageReference "generative-ai-swift" */;
 			productName = GoogleGenerativeAI;
+		};
+		16A657A12D2AC69200A623D8 /* Shimmer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16A657A02D2AC69200A623D8 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */;
+			productName = Shimmer;
+		};
+		16A658232D2B5D3E00A623D8 /* OnBoardingKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 16A658222D2B5D3E00A623D8 /* XCRemoteSwiftPackageReference "OnBoardingKit" */;
+			productName = OnBoardingKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

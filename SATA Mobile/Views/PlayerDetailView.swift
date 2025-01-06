@@ -3,6 +3,7 @@ import SwiftUI
 struct PlayerDetailView: View {
     let playerId: String
     let team: Team
+    let gameId: Int?
     @StateObject private var viewModel = PlayerDetailViewModel()
     @Environment(\.dismiss) private var dismiss
     
@@ -31,6 +32,10 @@ struct PlayerDetailView: View {
         )
         .task {
             await viewModel.fetchPlayerDetail(id: playerId)
+            if let gameId = gameId {  // Only fetch game stats if gameId exists
+                print("🎮 Fetching game stats for gameId: \(gameId)")
+                await viewModel.fetchPlayerGameStats(gameId: gameId, playerId: playerId)
+            }
         }
     }
     
@@ -74,7 +79,7 @@ struct PlayerDetailView: View {
                     }
                 }
                 
-                // Market Value Card
+                // Season stats
                 HStack {
                     StatItem(value: player.stats.appearances ?? 0, label: "Games")
                     Spacer()
@@ -82,25 +87,45 @@ struct PlayerDetailView: View {
                     Spacer()
                     StatItem(value: player.stats.assists ?? 0, label: "Assists")
                     Spacer()
-                    StatItem(value: player.stats.yellowCards ?? 0, label: "Yellow's")
+                    StatItem(value: player.stats.yellowCards ?? 0, label: "Yellows")
                     Spacer()
-                    StatItem(value: player.stats.redCards ?? 0, label: "Red's")
+                    StatItem(value: player.stats.redCards ?? 0, label: "Reds")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 20)
                 .background(Material.ultraThin)
                 .cornerRadius(15)
+                
+                if let gameStats = viewModel.gameStats {
+                    VStack(alignment: .leading, spacing: 0) {
+                        VStack(spacing: 0) {
+                            ForEach(Array(Mirror(reflecting: gameStats).children), id: \.label) { child in
+                                if let label = child.label, let value = child.value as? Int {
+                                    VStack(spacing: 0) {
+                                        HStack {
+                                            Text(label.capitalized)
+                                                .font(.system(size: 16))
+                                            Spacer()
+                                            Text("\(value)")
+                                                .font(.system(size: 16, weight: .medium))
+                                        }
+                                        .padding(.vertical, 12)
+                                        .padding(.horizontal, 5)
+                                        
+                                        if label != Array(Mirror(reflecting: gameStats).children).last?.label {
+                                            Divider()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             .padding(.horizontal, 24)
         }
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: share) {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(.secondary)
-                }
-            }
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark.circle")

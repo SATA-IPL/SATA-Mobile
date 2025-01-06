@@ -6,14 +6,21 @@
 //
 
 import SwiftUI
-import SwiftData
+import Metal
 
 @main
-struct SATA_MobileApp: App {
+struct SATAMobileApp: App {
+   
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(.dark) // Forces dark mode for this view
+            .preferredColorScheme(.dark)
+            .onOpenURL { url in
+                if url.scheme == "sata" {
+                    print("Widget tapped! URL: \(url)")
+                    // Handle navigation or actions here
+                }
+            }
         }
     }
 }

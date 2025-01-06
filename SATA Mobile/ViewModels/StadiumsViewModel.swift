@@ -20,9 +20,9 @@ class StadiumsViewModel: ObservableObject {
             print("✅ Games data received: \(data.count) bytes")
             
             // Print received JSON for debugging
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("📄 Received JSON: \(jsonString)")
-            }
+            // if let jsonString = String(data: data, encoding: .utf8) {
+            //     print("📄 Received JSON: \(jsonString)")
+            // }
             
             do {
                 stadiums = try JSONDecoder().decode([Stadium].self, from: data)

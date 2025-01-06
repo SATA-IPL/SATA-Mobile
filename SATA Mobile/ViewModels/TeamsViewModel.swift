@@ -4,9 +4,30 @@ import Foundation
 class TeamsViewModel: ObservableObject {
     @Published var teams: [Team] = []
     @Published var state: ViewState = .loading
+    @Published private var selectedTeamId: String?
+    
+    var currentTeam: String? {
+        selectedTeamId ?? UserDefaults.standard.string(forKey: "teamId")
+    }
     
     var teamNames: [String] {
         teams.map { $0.name }.sorted()
+    }
+
+    var currentTeamName: String? {
+        if let teamId = currentTeam,
+           let team = teams.first(where: { $0.id == teamId }) {
+            return team.name
+        }
+        return nil
+    }
+
+    var currentTeamImage: String? {
+        if let teamId = currentTeam,
+           let team = teams.first(where: { $0.id == teamId }) {
+            return team.image
+        }
+        return nil
     }
 
     func fetchTeams() async {
@@ -24,9 +45,9 @@ class TeamsViewModel: ObservableObject {
             print("✅ Teams data received: \(data.count) bytes")
             
             // Print received JSON for debugging
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("📄 Received JSON: \(jsonString)")
-            }
+            // if let jsonString = String(data: data, encoding: .utf8) {
+            //     print("📄 Received JSON: \(jsonString)")
+            // }
             
             do {
                 teams = try JSONDecoder().decode([Team].self, from: data)
@@ -53,9 +74,9 @@ class TeamsViewModel: ObservableObject {
         }
     }
     
-    func SetTeam(team: Team) {
-        //Save team id to App Storage
+    func setTeam(team: Team) {
         let teamId = team.id
         UserDefaults.standard.set(teamId, forKey: "teamId")
+        selectedTeamId = teamId
     }
 }

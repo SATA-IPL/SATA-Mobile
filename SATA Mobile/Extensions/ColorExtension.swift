@@ -29,3 +29,23 @@ extension Color {
         }
     }
 }
+
+
+extension Color {
+    func textColor() -> Color {
+        // Convert team color to RGB components
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        // Calculate luminance using standard formula
+        let luminance = 0.299 * red + 0.587 * green + 0.114 * blue
+        
+        // Return white for dark colors, black for light colors
+        return luminance > 0.5 ? .black : .white
+    }
+}

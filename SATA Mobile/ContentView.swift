@@ -10,20 +10,27 @@ import SwiftData
 
 enum Tab: String, Hashable {
     case games
+    case calendar
     case myTeam
+    case profile
     
     var title: String {
         switch self {
         case .games:
             return "Games"
+        case .calendar:
+            return "Calendar"
         case .myTeam:
             return "My Team"
+        case .profile:
+            return "Profile"
         }
     }
 }
 
 struct ContentView: View {
     @StateObject private var viewModel = GamesViewModel()
+    @StateObject private var teamsViewModel = TeamsViewModel()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding = false
     
@@ -48,13 +55,32 @@ struct ContentView: View {
                         .tabItem {
                             Label("Games", systemImage: "sportscourt.fill")
                         }
+                        
+                        NavigationStack {
+                            CalendarView()
+                                .navigationTitle("Calendar")
+                        }
+                        .tag(Tab.calendar)
+                        .tabItem {
+                            Label("Calendar", systemImage: "calendar")
+                        }
+                        
                         NavigationStack {
                             MyTeamView()
-                                .navigationTitle("Porto")
+                                .navigationTitle(teamsViewModel.currentTeamName ?? "Choose a Team")
                         }
                         .tag(Tab.myTeam)
                         .tabItem {
                             Label("My Team", systemImage: "star.fill")
+                        }
+                        
+                        NavigationStack {
+                            ProfileView()
+                                .navigationTitle("Profile")
+                        }
+                        .tag(Tab.profile)
+                        .tabItem {
+                            Label("Profile", systemImage: "person.circle.fill")
                         }
                     }
                     .navigationTitle("SATA")
@@ -64,12 +90,16 @@ struct ContentView: View {
                 hasSeenOnboarding = true
             }) {
                 OnboardingView()
+                .preferredColorScheme(.dark)
             }
             .onAppear {
                 if !hasSeenOnboarding {
                     showOnboarding = true
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenMyTeamView"))) { _ in
+            selectedTab = .myTeam
         }
     }
 }

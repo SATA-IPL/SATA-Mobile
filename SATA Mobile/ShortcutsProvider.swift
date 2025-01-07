@@ -64,6 +64,13 @@ struct NextTeamMatchIntent: AppIntent {
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             
+            // First check if response is empty or just "{}"
+            if data.isEmpty || String(data: data, encoding: .utf8) == "{}" {
+                response = "There are no scheduled games for your team at the moment."
+                return
+            }
+            
+            // Only try to decode if we have actual data
             struct UpcomingGame: Codable {
                 let away_team: Team
                 let home_team: Team
@@ -72,36 +79,47 @@ struct NextTeamMatchIntent: AppIntent {
                 
                 struct Team: Codable {
                     let name: String
+                    let id: Int
                 }
             }
             
-            let game = try JSONDecoder().decode(UpcomingGame.self, from: data)
-            
-            // Format date for natural language
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            let date = dateFormatter.date(from: game.date) ?? Date()
-            
-            let calendar = Calendar.current
-            let today = calendar.startOfDay(for: Date())
-            let gameDay = calendar.startOfDay(for: date)
-            
-            let dayDifference = calendar.dateComponents([.day], from: today, to: gameDay).day ?? 0
-            
-            let dayText: String
-            switch dayDifference {
-            case 0: dayText = "Today"
-            case 1: dayText = "Tomorrow"
-            default: 
-                dateFormatter.dateFormat = "EEEE, MMMM d"
-                dayText = "on \(dateFormatter.string(from: date))"
+            do {
+                let game = try JSONDecoder().decode(UpcomingGame.self, from: data)
+                
+                // Format date for natural language
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                let date = dateFormatter.date(from: game.date) ?? Date()
+                
+                let calendar = Calendar.current
+                let today = calendar.startOfDay(for: Date())
+                let gameDay = calendar.startOfDay(for: date)
+                
+                let dayDifference = calendar.dateComponents([.day], from: today, to: gameDay).day ?? 0
+                
+                let dayText: String
+                switch dayDifference {
+                case 0: dayText = "Today"
+                case 1: dayText = "Tomorrow"
+                default: 
+                    dateFormatter.dateFormat = "EEEE, MMMM d"
+                    dayText = "on \(dateFormatter.string(from: date))"
+                }
+                
+                // Generate natural language response
+                let opponent = game.home_team.id == teamId ? game.away_team.name : game.home_team.name
+                let message = "Your next match is \(dayText) at \(game.hour) against \(opponent)"
+                
+                response = message
+                
+            } catch DecodingError.keyNotFound(_, _) {
+                response = "There are no scheduled games for your team at the moment."
+                return
+            } catch {
+                print("❌ Error decoding game: \(error.localizedDescription)")
+                response = "Sorry, I couldn't fetch the upcoming game information."
+                return
             }
-            
-            // Generate natural language response
-            let opponent = game.away_team.name == "Sporting CP" ? game.home_team.name : game.away_team.name
-            let message = "Your next match is \(dayText) at \(game.hour) against \(opponent)"
-            
-            response = message
             
         } catch {
             print("❌ Error fetching upcoming game: \(error.localizedDescription)")

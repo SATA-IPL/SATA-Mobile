@@ -31,7 +31,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "16ECB2E22D1DD9D200367F2A"
-               BuildableName = "SATA Mobile.app"
+               BuildableName = "SATA.app"
                BlueprintName = "SATA Mobile"
                ReferencedContainer = "container:SATA Mobile.xcodeproj">
             </BuildableReference>
@@ -72,7 +72,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "16ECB2E22D1DD9D200367F2A"
-            BuildableName = "SATA Mobile.app"
+            BuildableName = "SATA.app"
             BlueprintName = "SATA Mobile"
             ReferencedContainer = "container:SATA Mobile.xcodeproj">
          </BuildableReference>
@@ -108,7 +108,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "16ECB2E22D1DD9D200367F2A"
-            BuildableName = "SATA Mobile.app"
+            BuildableName = "SATA.app"
             BlueprintName = "SATA Mobile"
             ReferencedContainer = "container:SATA Mobile.xcodeproj">
          </BuildableReference>

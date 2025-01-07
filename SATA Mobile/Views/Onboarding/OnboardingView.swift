@@ -59,13 +59,13 @@ struct OnboardingView: View {
                         case .welcome:
                             WelcomeView(path: $path, onDismiss: handleCompletion)
                         case .siri:
-                            SiriView(path: $path)
+                            ShowcaseSiriView(path: $path)
                         case .dynamicIsland:
-                            DynamicIslandWelcomeView(path: $path)
+                            ShowcaseDynamicIslandView(path: $path)
                         case .standBy:
-                            StandByWelcomeView(path: $path)
+                            ShowcaseStandByView(path: $path)
                         case .watchLiveActivity:
-                            WatchLiveActivityWelcomeView(onComplete: handleCompletion)
+                            ShowcaseLiveActivityView(onComplete: handleCompletion)
                         }
                     }
                 }

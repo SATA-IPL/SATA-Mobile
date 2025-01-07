@@ -29,7 +29,7 @@ struct ProfileView: View {
                 }
             }
             
-            Section("Settings") {
+            Section("Account") {
                 Button {
                     openSystemSettings()
                 } label: {
@@ -39,12 +39,18 @@ struct ProfileView: View {
                 Button {
                     openShortcuts()
                 } label: {
-                    Label("Shortcuts", systemImage: "app.connected.to.app.below.fill")
+                    Label("Shortcuts", systemImage: "shortcuts")
                 }
             }
         
             
             Section("App") {
+                NavigationLink {
+                    StadiumListView()
+                } label: {
+                    Label("Stadiums", systemImage: "building.2")
+                }
+                
                 NavigationLink {
                     AboutView()
                 } label: {

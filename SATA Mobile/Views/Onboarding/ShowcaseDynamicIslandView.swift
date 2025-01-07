@@ -1,5 +1,5 @@
 //
-//  WatchLiveActivityWelcomeView.swift
+//  ShowcaseDynamicIsland.swift
 //  SATA Mobile
 //
 //  Created by João Franco on 05/01/2025.
@@ -8,13 +8,13 @@
 import SwiftUI
 import OnBoardingKit
 
-struct WatchLiveActivityWelcomeView: View {
-    let onComplete: () -> Void
+struct ShowcaseDynamicIslandView: View {
+    @Binding var path: NavigationPath
     
     var body: some View {
         VStack(spacing: 24) {
-            // Watch illustration
-            Image("WatchLiveActivity")
+            // Dynamic Island illustration
+            Image("DynamicIsland")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .background(Color.gray.opacity(0.2))
@@ -22,10 +22,10 @@ struct WatchLiveActivityWelcomeView: View {
             
             // Main content
             VStack(spacing: 16) {
-                Text("Apple Watch Updates")
+                Text("Dynamic Island")
                     .font(.system(size: 32, weight: .bold))
                 
-                Text("Get live game updates right on your wrist. Follow scores, match progress, and important events with a quick glance at your Apple Watch.")
+                Text("Stay updated with live activities right from your Dynamic Island. Track game scores, match times, and more without opening the app.")
                     .font(.system(size: 16))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
@@ -35,16 +35,16 @@ struct WatchLiveActivityWelcomeView: View {
             
             // Footer content
             VStack(spacing: 20) {
-                Text("Requires Apple Watch with watchOS 11 or later. Make sure your Watch is paired and notifications are enabled.")
+                Text("This feature requires iPhone 14 Pro or later. Live Activities need to be enabled in Settings.")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                 
                 Button(action: {
-                    onComplete()
+                    path.append(OnboardingPage.standBy)
                 }) {
-                    Text("Get Started")
+                    Text("Continue")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

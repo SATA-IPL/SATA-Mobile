@@ -1,7 +1,7 @@
 import Foundation
 import MapKit
 
-struct Stadium: Codable {
+struct Stadium: Codable, Identifiable {
   let clubId: String
   let id: String
   let latitude: Double

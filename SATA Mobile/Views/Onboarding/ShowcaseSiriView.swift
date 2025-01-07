@@ -1,5 +1,5 @@
 //
-//  WelcomeView.swift
+//  ShowcaseSiriView.swift
 //  SATA Mobile
 //
 //  Created by João Franco on 05/01/2025.
@@ -8,7 +8,7 @@
 import SwiftUI
 import OnBoardingKit
 
-struct SiriView: View {
+struct ShowcaseSiriView: View {
     @Binding var path: NavigationPath
     
     var body: some View {

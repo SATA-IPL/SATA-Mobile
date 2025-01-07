@@ -221,20 +221,9 @@ struct GameDetailView: View {
     
     private var overviewSection: some View {
         VStack(spacing: 12) {
-            switch viewModel.state {
-            case .loading:
-                loadingAdditionalInfo
-            case .error(let message):
-                ContentUnavailableView {
-                    Label("Unable to Load Details", systemImage: "exclamationmark.triangle")
-                } description: {
-                    Text(message)
-                }
-            case .loaded:
-                if let detailedGame = viewModel.game {
-                    matchStatsCard(game)
-                    eventsCard(game, viewModel)  // Pass viewModel here
-                }
+            if let detailedGame = viewModel.game {
+                matchStatsCard(game)
+                eventsCard(game, viewModel)
             }
         }
     }
@@ -252,26 +241,13 @@ struct GameDetailView: View {
                 }
                 .padding(.horizontal)
                 
-                ZStack {
-                    if viewModel.isLoading {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(0..<3) { _ in
-                                ShimmerLoadingView()
-                                    .frame(height: 16)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        .padding()
-                    } else {
-                        Text(viewModel.response)
-                            .font(.body)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(.thinMaterial)
-                            .cornerRadius(10)
-                    }
-                }
-                .padding(.horizontal)
+                Text(viewModel.response)
+                    .font(.body)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(.thinMaterial)
+                    .cornerRadius(10)
+                    .padding(.horizontal)
             }
             .onAppear {
                 if viewModel.response == "How can I help you today?" {
@@ -291,7 +267,7 @@ struct GameDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             if let detailedGame = viewModel.game {
                 SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam, gameId: gameId)
-                    .aspectRatio(1.5, contentMode: .fit) // This will maintain aspect ratio while filling width
+                    .aspectRatio(1.5, contentMode: .fit)
                     .padding(.horizontal)
                 
                 if let players = detailedGame.homeTeam.players {
@@ -300,41 +276,6 @@ struct GameDetailView: View {
                 
                 if let players = detailedGame.awayTeam.players {
                     TeamLineupView(team: detailedGame.awayTeam, players: players, gameId: gameId)
-                }
-            } else {
-                loadingAdditionalInfo
-            }
-        }
-    }
-    
-    private var loadingAdditionalInfo: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Loading Game Information")
-                .font(.title3)
-                .fontWeight(.bold)
-                .padding(.horizontal)
-            
-            ForEach(0..<2) { _ in
-                VStack(alignment: .leading, spacing: 10) {
-                    ShimmerLoadingView()
-                        .frame(width: 120, height: 20)
-                        .padding(.horizontal)
-                    
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: 15) {
-                            ForEach(0..<5) { _ in
-                                VStack {
-                                    ShimmerLoadingView()
-                                        .frame(width: 70, height: 70)
-                                        .clipShape(Circle())
-                                    ShimmerLoadingView()
-                                        .frame(width: 60, height: 12)
-                                }
-                                .frame(width: 100)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
                 }
             }
         }
@@ -852,18 +793,15 @@ enum CardStyle {
 struct InfoCard<Content: View>: View {
     let title: String
     let icon: String
-    let isLoading: Bool
     let content: () -> Content
     
     init(
         title: String,
         icon: String,
-        isLoading: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
         self.icon = icon
-        self.isLoading = isLoading
         self.content = content
     }
     
@@ -877,10 +815,6 @@ struct InfoCard<Content: View>: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                }
             }
             
             content()

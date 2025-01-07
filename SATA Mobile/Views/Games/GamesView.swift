@@ -70,6 +70,7 @@ struct GamesView: View {
                     LazyVStack(alignment: .leading, spacing: 16) {
                         ForEach(filteredGames) { game in
                             GameCardView(game: game)
+                                .whenRedacted { $0.hidden() }
                                 .matchedGeometryEffect(id: game.id, in: namespace)
                         }
                     }

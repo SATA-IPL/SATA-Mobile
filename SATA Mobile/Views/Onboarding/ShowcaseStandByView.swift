@@ -8,7 +8,7 @@
 import SwiftUI
 import OnBoardingKit
 
-struct StandByWelcomeView: View {
+struct ShowcaseStandByView: View {
     @Binding var path: NavigationPath
     
     var body: some View {

@@ -99,7 +99,7 @@ struct GameDetailView: View {
                     
                     
                     // Replace old Picker with new custom control
-                    CustomSegmentedControl(selectedSection: $selectedSection)
+                    CustomSegmentedControl(selectedSection: $selectedSection, sections: GameSection.allCases)
                         .padding(.vertical, 8)
                     
                     VStack(spacing: 20) {
@@ -339,32 +339,6 @@ struct GameDetailView: View {
     }
 }
 
-struct CustomSegmentedControl: View {
-    @Binding var selectedSection: GameDetailView.GameSection
-    let sections = GameDetailView.GameSection.allCases
-    
-    var body: some View {
-        HStack {
-            ForEach(sections, id: \.self) { section in
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedSection = section
-                    }
-                }) {
-                    Text(section.rawValue)
-                        .font(.system(.title2, weight: .bold).width(.compressed))
-                        .clipped()
-                        .foregroundStyle(selectedSection == section ? .primary : .secondary)
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical)
-    }
-}
-
 struct TeamView: View {
     let team: Team
     let score: Int
@@ -375,12 +349,14 @@ struct TeamView: View {
                 .foregroundStyle(.primary)
                 .font(.system(size: 75, weight: .black, design: .default).width(.compressed))
             if let imageUrl = team.image {
-                AsyncImage(url: URL(string: imageUrl)) { image in
-                    image.resizable()
-                } placeholder: {
-                    Color.gray.opacity(0.3)
+                NavigationLink(destination: TeamDetailView(team: team)) {
+                    AsyncImage(url: URL(string: imageUrl)) { image in
+                        image.resizable()
+                    } placeholder: {
+                        Color.gray.opacity(0.3)
+                    }
+                    .frame(width: 50, height: 50)
                 }
-                .frame(width: 50, height: 50)
             }
             Text(team.name)
                 .font(.system(.footnote, weight: .semibold).width(.condensed))

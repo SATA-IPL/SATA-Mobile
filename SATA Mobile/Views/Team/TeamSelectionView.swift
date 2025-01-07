@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct TeamSelectionView: View {
-    @ObservedObject var teamsViewModel: TeamsViewModel = TeamsViewModel()
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var teamsViewModel: TeamsViewModel
     @State private var showContent = false
     @State private var selectedTeam: Team?
     @State private var currentTeamId: String?
     @State private var searchText = ""
+    @State private var showingConfirmation = false
     
     private var filteredTeams: [Team] {
         guard !searchText.isEmpty else { return teamsViewModel.teams }
@@ -22,75 +24,99 @@ struct TeamSelectionView: View {
     }
     
     var body: some View {
-        List {
-            Section {
-                VStack(spacing: 8) {
-                    Image(systemName: "person.3.sequence.fill")  // Better SF Symbol
-                        .symbolEffect(.bounce)
-                        .font(.system(size: 50))
-                        .foregroundStyle(.accent)
-                    
-                    Text("Choose Your Team")
-                        .font(.title2.weight(.bold))
-                    
-                    Text("Select the team you want to follow")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .listRowInsets(EdgeInsets())
-            }
-            
-            Section {
-                ForEach(filteredTeams) { team in
+        NavigationStack {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                List(filteredTeams) { team in
                     teamRow(for: team)
-                        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }  // Proper separator alignment
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.primary.opacity(0.1))
                 }
-            } header: {
-                Text("Available Teams")
-                    .textCase(nil)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                .scrollContentBackground(.hidden)
+                .navigationTitle("Select Team")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Confirm") {
+                            showingConfirmation = true
+                        }
+                        .disabled(selectedTeam == nil)
+                        .bold()
+                    }
+                }
+                .alert("Confirm Team Selection", isPresented: $showingConfirmation) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Confirm") {
+                        if let team = selectedTeam {
+                            Task {
+                                teamsViewModel.setTeam(team: team)
+                                await teamsViewModel.fetchTeams()
+                                dismiss()
+                            }
+                        }
+                    }
+                } message: {
+                    if let team = selectedTeam {
+                        Text("Are you sure you want to select \(team.name)?")
+                    }
+                }
+                .listStyle(.insetGrouped)
+                .searchable(text: $searchText, placement: .navigationBarDrawer, prompt: "Search teams")
+                .animation(.easeOut(duration: 0.3), value: filteredTeams)
+                .overlay {
+                    if teamsViewModel.teams.isEmpty {
+                        ContentUnavailableView {
+                            Label("No Teams", systemImage: "person.3")
+                        } description: {
+                            Text("Teams will appear here once loaded")
+                        }
+                    }
+                }
+                .onAppear {
+                    withAnimation(.easeOut(duration: 0.6)) {
+                        showContent = true
+                    }
+                    currentTeamId = teamsViewModel.currentTeam
+                    if let currentId = teamsViewModel.currentTeam,
+                       let team = teamsViewModel.teams.first(where: { $0.id == currentId }) {
+                        selectedTeam = team
+                    }
+                }
+                .task {
+                    await teamsViewModel.fetchTeams()
+                }
             }
-        }
-        .navigationTitle("Select Team")
-        .navigationBarTitleDisplayMode(.large)
-        .listStyle(.insetGrouped)
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, placement: .navigationBarDrawer)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6)) {
-                showContent = true
-            }
-            currentTeamId = teamsViewModel.currentTeam
-            if let currentId = teamsViewModel.currentTeam,
-               let team = teamsViewModel.teams.first(where: { $0.id == currentId }) {
-                selectedTeam = team
-            }
-        }
-        .task {
-            await teamsViewModel.fetchTeams()
         }
     }
     
     private func teamRow(for team: Team) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             AsyncImage(url: URL(string: team.image ?? "")) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
             } placeholder: {
-                Image(systemName: "photo")
+                Image(systemName: "person.3")
                     .foregroundStyle(.secondary)
+                    .font(.title2)
             }
-            .frame(width: 40, height: 40)
-            .clipShape(Circle())
+            .frame(width: 44, height: 44)
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text(team.name)
-                    .font(.body.weight(.medium))
-            }
+            Text(team.name)
+                .font(.body)
+                .foregroundStyle(.primary)
             
             Spacer()
             
@@ -98,15 +124,14 @@ struct TeamSelectionView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(.accent)
+                    .font(.title3)
             }
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation {
+            withAnimation(.spring(response: 0.3)) {
                 selectedTeam = team
-                teamsViewModel.setTeam(team: team)
             }
         }
-        .padding(.vertical, 4)
     }
 }

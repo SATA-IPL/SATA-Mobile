@@ -29,7 +29,7 @@ enum Tab: String, Hashable {
 }
 
 struct ContentView: View {
-    @StateObject private var viewModel = GamesViewModel()
+    @StateObject private var gamesViewModel = GamesViewModel()
     @StateObject private var teamsViewModel = TeamsViewModel()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding = false
@@ -96,7 +96,18 @@ struct ContentView: View {
                 if !hasSeenOnboarding {
                     showOnboarding = true
                 }
+                
+                // Pre-fetch teams data
+                Task {
+                    await teamsViewModel.fetchTeams()
+                    if let storedTeamId = UserDefaults.standard.string(forKey: "teamId"),
+                       let storedTeam = teamsViewModel.teams.first(where: { $0.id == storedTeamId }) {
+                        teamsViewModel.setTeam(team: storedTeam)
+                    }
+                }
             }
+            .environmentObject(gamesViewModel)
+            .environmentObject(teamsViewModel)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenMyTeamView"))) { _ in
             selectedTab = .myTeam

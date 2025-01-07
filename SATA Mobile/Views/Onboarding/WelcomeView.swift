@@ -7,56 +7,65 @@ struct WelcomeView: View {
     let onDismiss: () -> Void
     
     var body: some View {
-        VStack(spacing: 32) {
-            Spacer()
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            // App Icon
-            Image("Icon")
-                .resizable()
-                .frame(width: 120, height: 120)
-                .cornerRadius(24)
-                .padding(.bottom, 16)
-            
-            // Main content
-            VStack(spacing: 16) {
-                Text("Welcome to SATA Mobile")
-                    .font(.system(size: 32, weight: .bold))
+            VStack(spacing: 32) {
+                Spacer()
                 
-                Text("Your ultimate companion for tracking games, scores, and team updates. Get ready for an enhanced sports experience.")
-                    .font(.system(size: 16))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-            }
-            
-            Spacer()
-            
-            // Footer content
-            VStack(spacing: 20) {
-                Text("Discover all the features we've prepared to keep you connected with your favorite teams.")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                // App Icon
+                Image("Icon")
+                    .resizable()
+                    .frame(width: 120, height: 120)
+                    .cornerRadius(24)
+                    .padding(.bottom, 16)
                 
-                Button(action: {
-                    path.append(OnboardingPage.siri)
-                }) {
-                    Text("See Features")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(.accent.opacity(0.6))
-                        .cornerRadius(12)
+                // Main content
+                VStack(spacing: 16) {
+                    Text("Welcome to SATA Mobile")
+                        .font(.system(size: 32, weight: .bold))
+                    
+                    Text("Your ultimate companion for tracking games, scores, and team updates. Get ready for an enhanced sports experience.")
+                        .font(.system(size: 16))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
+                
+                Spacer()
+                
+                // Footer content
+                VStack(spacing: 20) {
+                    Text("Discover all the features we've prepared to keep you connected with your favorite teams.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                    
+                    Button(action: {
+                        path.append(OnboardingPage.siri)
+                    }) {
+                        Text("See Features")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(.accent.opacity(0.6))
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 24)
 
-                Button("Go to App") {
-                    onDismiss()
+                    Button("Go to App") {
+                        onDismiss()
+                    }
+                    .font(.system(size: 17))
+                    .foregroundColor(.accent)
+                    .padding(.bottom, 16)
                 }
-                .font(.system(size: 17))
-                .foregroundColor(.accent)
-                .padding(.bottom, 16)
             }
         }
     }

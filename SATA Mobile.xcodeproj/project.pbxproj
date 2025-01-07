@@ -609,6 +609,7 @@
 				INFOPLIST_FILE = "SATA-Mobile-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SATA;
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "We need access to your calendar to add match events.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -654,6 +655,7 @@
 				INFOPLIST_FILE = "SATA-Mobile-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SATA;
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "We need access to your calendar to add match events.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

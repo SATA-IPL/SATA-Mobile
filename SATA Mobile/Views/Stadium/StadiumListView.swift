@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StadiumListView: View {
     @StateObject private var viewModel = StadiumsViewModel()
-    @State private var showStadiumSheet = false
     @State private var selectedStadium: Stadium?
     @State private var searchText = ""
     
@@ -14,45 +13,53 @@ struct StadiumListView: View {
     }
     
     var body: some View {
-        Group {
-            switch viewModel.state {
-            case .loading:
-                ProgressView()
-            case .loaded:
-                List(filteredStadiums) { stadium in
-                    Button {
-                        selectedStadium = stadium
-                        showStadiumSheet = true
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(stadium.stadiumName)
-                                    .font(.headline)
-                                Text("Built in \(stadium.yearBuilt)")
-                                    .font(.subheadline)
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            Group {
+                switch viewModel.state {
+                case .loading:
+                    ProgressView()
+                case .loaded:
+                    List(filteredStadiums) { stadium in
+                        Button {
+                            selectedStadium = stadium
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(stadium.stadiumName)
+                                        .font(.headline)
+                                    Text("Built in \(stadium.yearBuilt)")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                //Chevron
+                                Image(systemName: "chevron.right")
                                     .foregroundStyle(.secondary)
                             }
-                            
-                            Spacer()
-                            
-                            Text("\(stadium.stadiumSeats)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                         }
+                        .listRowBackground(Color.primary.opacity(0.1))
+                        .foregroundStyle(.primary)
                     }
-                    .foregroundStyle(.primary)
+                    .searchable(text: $searchText, prompt: "Search stadiums")
+                    .scrollContentBackground(.hidden)
+                case .error(let message):
+                    Text(message)
+                        .foregroundStyle(.red)
                 }
-                .searchable(text: $searchText, prompt: "Search stadiums")
-            case .error(let message):
-                Text(message)
-                    .foregroundStyle(.red)
             }
         }
         .navigationTitle("Stadiums")
-        .sheet(isPresented: $showStadiumSheet) {
-            if let stadium = selectedStadium {
-                StadiumView(stadium: stadium)
-            }
+        .sheet(item: $selectedStadium) { stadium in
+            StadiumView(stadium: stadium)
         }
         .task {
             await viewModel.fetchStadium()

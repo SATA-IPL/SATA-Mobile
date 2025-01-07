@@ -4,7 +4,16 @@ import Foundation
 class TeamsViewModel: ObservableObject {
     @Published var teams: [Team] = []
     @Published var state: ViewState = .loading
+    @Published var team: Team?
     @Published private var selectedTeamId: String?
+    
+    // Added team details properties
+    @Published var teamStats = TeamStats()
+    @Published var recentForm: [String] = []
+    @Published var nextMatch: NextMatch?
+    @Published var squad: [Player] = []
+    @Published var matches: [Match] = []
+    @Published var games: [Game] = []
     
     var currentTeam: String? {
         selectedTeamId ?? UserDefaults.standard.string(forKey: "teamId")
@@ -75,8 +84,49 @@ class TeamsViewModel: ObservableObject {
     }
     
     func setTeam(team: Team) {
+        self.team = team
         let teamId = team.id
         UserDefaults.standard.set(teamId, forKey: "teamId")
         selectedTeamId = teamId
+        
+        // Fetch team details when team is selected
+        Task {
+            await fetchTeamDetails()
+            await fetchTeamGames()
+        }
+    }
+    
+    func fetchTeamDetails() async {
+        guard let teamId = currentTeam else { return }
+        
+        if let selectedTeam = teams.first(where: { $0.id == teamId }) {
+            team = selectedTeam
+        }
+        
+        // Fetch team details using teamId
+        // For now, using mock data
+        teamStats = TeamStats(
+            matches: 38,
+            wins: 25,
+            losses: 8,
+            goalsFor: 80,
+            goalsAgainst: 35,
+            cleanSheets: 15
+        )
+        
+        recentForm = ["W", "W", "D", "L", "W"]
+        
+        nextMatch = NextMatch(
+            opponent: "Sporting CP",
+            date: "2024-03-15",
+            competition: "League Cup"
+        )
+        
+        // Fetch squad and matches data...
+    }
+    
+    func fetchTeamGames() async {
+        guard let teamId = currentTeam else { return }
+        // Fetch team games using teamId
     }
 }

@@ -5,12 +5,12 @@ import SwiftUI
 @MainActor
 class GameDetailViewModel: ObservableObject {
     @Published var game: Game?
-    @Published var teamGameStats: TeamGameStats?
     @Published var state: ViewState = .loading
     @Published var isLoading = false
     @Published var response: LocalizedStringKey = "How can I help you today?"
     @Published var events: [Event] = []
-    @Published var additionalDataState: ViewState = .loading  // Add this new property
+    @Published var homeStatistics: [Statistics] = []
+    @Published var awayStatistics: [Statistics] = []
     
     private static let config = GenerationConfig(
         temperature: 1,
@@ -110,5 +110,55 @@ class GameDetailViewModel: ObservableObject {
                 print("❌ Error fetching events: \(error)")
             }
         }
+    func fetchHomeStatistics(gameId: Int) async {
+        print("📱 Starting to fetch events for game ID: \(gameId)")
+        
+        guard let url = URL(string: "http://144.24.177.214:5000/game/\(gameId)/statistics/home") else {
+            print("❌ Invalid URL for home statistics endpoint")
+            return
+        }
+        
+        do {
+            print("🌐 Fetching home statistics from network...")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            print("✅ Home Statistics data received: \(data.count) bytes")
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📄 Received JSON: \(jsonString)")
+            }
+            
+            let stat = try JSONDecoder().decode(Statistics.self, from: data)
+            homeStatistics = [stat]
+            print("📊 Successfully decoded home statistics")
+            
+        } catch {
+            print("❌ Error fetching home stats: \(error)")
+        }
+    }
+
+    func fetchAwayStatistics(gameId: Int) async {
+        print("📱 Starting to fetch away statistics for game ID: \(gameId)")
+        
+        guard let url = URL(string: "http://144.24.177.214:5000/game/\(gameId)/statistics/away") else {
+            print("❌ Invalid URL for events endpoint")
+            return
+        }
+        
+        do {
+            print("🌐 Fetching away statistics from network...")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            print("✅ Away Statistics data received: \(data.count) bytes")
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📄 Received JSON: \(jsonString)")
+            }
+            
+            let stat = try JSONDecoder().decode(Statistics.self, from: data)
+            awayStatistics = [stat]
+            print("📊 Successfully decoded away statistics")
+        } catch {
+            print("❌ Error fetching away stats: \(error)")
+        }
+    }
 }
 

@@ -14,7 +14,7 @@ struct Game: Identifiable, Decodable {
   let stadium: Stadium?
   let videoUrl: String?
   let leagueId: Int?
-  let teamGameStats: TeamGameStats?
+  
     
   
   var id: Int { gameId }
@@ -56,7 +56,6 @@ struct Game: Identifiable, Decodable {
     stadium = try container.decodeIfPresent(Stadium.self, forKey: .stadium)
     videoUrl = try container.decodeIfPresent(String.self, forKey: .videoUrl)
     leagueId = try container.decodeIfPresent(Int.self, forKey: .leagueId)
-    teamGameStats = try container.decodeIfPresent(TeamGameStats.self, forKey: .teamGameStats)
   }
   
   static func == (lhs: Game, rhs: Game) -> Bool {

@@ -21,8 +21,7 @@ struct Event: Codable, Identifiable {
         let components = calendar.dateComponents([.minute], from: date)
         return components.minute ?? 0
     }
-    
-    var eventTypeEnum: EventType? {
+     var eventTypeEnum: EventType? {
         EventType(rawValue: event_type)
     }
 }

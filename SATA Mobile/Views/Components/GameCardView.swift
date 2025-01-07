@@ -9,33 +9,6 @@ struct GameCardView: View {
             GameDetailView(
                 game: game,
                 gameId: game.id,
-                teamGameStats: game.teamGameStats ?? TeamGameStats(
-                    gameId: game.id,
-                    homeTeamEvents: TeamEvents(
-                        goals: game.homeScore,
-                        shots: 0,
-                        shotsOnTarget: 0,
-                        possession: 0,
-                        passes: 0,
-                        fouls: 0,
-                        yellowCards: 0,
-                        redCards: 0,
-                        offsides: 0,
-                        corners: 0
-                    ),
-                    awayTeamEvents: TeamEvents(
-                        goals: game.awayScore,
-                        shots: 0,
-                        shotsOnTarget: 0,
-                        possession: 0,
-                        passes: 0,
-                        fouls: 0,
-                        yellowCards: 0,
-                        redCards: 0,
-                        offsides: 0,
-                        corners: 0
-                    )
-                ),
                 animation: animation
             )
         } label: {

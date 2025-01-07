@@ -3,73 +3,15 @@ import AVKit
 import GoogleGenerativeAI
 import ActivityKit
 
-
-enum EventType: String, CaseIterable, Identifiable {
-    case goal = "Goal"
-    case assist = "Assist"
-    case finish = "Finish"
-    case corner = "Corner"
-    case foul = "Foul"
-    case freeKick = "Free kick"
-    case defense = "Defense"
-    case interception = "Interception"
-    case offside = "Offside"
-    case tackle = "Tackle"
-    case penalty = "Penalty"
-    case substitution = "Substitution"
-    case yellowCard = "Yellow Card"
-    case redCard = "Red Card"
-    
-    var icon: String {
-        switch self {
-        case .goal: return "soccerball"
-        case .assist: return "arrow.right"
-        case .finish: return "target"
-        case .corner: return "flag.fill"
-        case .foul: return "exclamationmark.triangle"
-        case .freeKick: return "dot.circle.and.hand.point.up.left.fill"
-        case .defense: return "shield.fill"
-        case .interception: return "arrow.up.right.and.arrow.down.left"
-        case .offside: return "flag.2.crossed"
-        case .tackle: return "figure.soccer"
-        case .penalty: return "exclamationmark.circle"
-        case .substitution: return "arrow.left.arrow.right"
-        case .yellowCard: return "square.fill"
-        case .redCard: return "square.fill"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .goal: return .green
-        case .assist: return .blue
-        case .finish: return .orange
-        case .corner: return .mint
-        case .foul: return .red
-        case .freeKick: return .purple
-        case .defense: return .indigo
-        case .interception: return .teal
-        case .offside: return .gray
-        case .tackle: return .brown
-        case .penalty: return .pink
-        case .substitution: return .blue
-        case .yellowCard: return .yellow
-        case .redCard: return .red
-        }
-    }
-    
-    var id: String { self.rawValue }
-}
-
 struct GameDetailView: View {
     let game: Game
     let gameId: Int
-    let teamGameStats: TeamGameStats
     @StateObject private var viewModel = GameDetailViewModel()
     var animation: Namespace.ID
     @State private var showStadium = false
     @State private var showVideoPlayer = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var isStatsLoaded = false
     
     @State var userPrompt = ""
     @State private var isTextExpanded = false
@@ -189,11 +131,17 @@ struct GameDetailView: View {
         .task {
             await viewModel.fetchGameDetail(id: gameId)
             await viewModel.fetchEvents(gameId: gameId)
+            await viewModel.fetchHomeStatistics(gameId: gameId)
+            await viewModel.fetchAwayStatistics(gameId: gameId)
+            isStatsLoaded = true
             if let game = viewModel.game {
+                print("Fetched home statistics:", viewModel.homeStatistics)
+                print("Fetched away statistics:", viewModel.awayStatistics)
                 //print("Fetched game details:", game)
                 // Start live activity for demo purposes, regardless of game state
                 startLiveActivity()
             }
+
         }
         .onDisappear {
             stopLiveActivity()
@@ -221,9 +169,20 @@ struct GameDetailView: View {
     
     private var overviewSection: some View {
         VStack(spacing: 12) {
-            if let detailedGame = viewModel.game {
-                matchStatsCard(game)
-                eventsCard(game, viewModel)
+            switch viewModel.state {
+            case .loading:
+                loadingAdditionalInfo
+            case .error(let message):
+                ContentUnavailableView {
+                    Label("Unable to Load Details", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(message)
+                }
+            case .loaded:
+                if let detailedGame = viewModel.game {
+                    matchStatsCard(game,viewModel,isStatsLoaded: isStatsLoaded)
+                    eventsCard(game, viewModel)
+                }
             }
         }
     }
@@ -241,13 +200,26 @@ struct GameDetailView: View {
                 }
                 .padding(.horizontal)
                 
-                Text(viewModel.response)
-                    .font(.body)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.thinMaterial)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
+                ZStack {
+                    if viewModel.isLoading {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(0..<3) { _ in
+                                ShimmerLoadingView()
+                                    .frame(height: 16)
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding()
+                    } else {
+                        Text(viewModel.response)
+                            .font(.body)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(.thinMaterial)
+                            .cornerRadius(10)
+                    }
+                }
+                .padding(.horizontal)
             }
             .onAppear {
                 if viewModel.response == "How can I help you today?" {
@@ -267,7 +239,7 @@ struct GameDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             if let detailedGame = viewModel.game {
                 SoccerFieldView(homeTeam: detailedGame.homeTeam, awayTeam: detailedGame.awayTeam, gameId: gameId)
-                    .aspectRatio(1.5, contentMode: .fit)
+                    .aspectRatio(1.5, contentMode: .fit) // This will maintain aspect ratio while filling width
                     .padding(.horizontal)
                 
                 if let players = detailedGame.homeTeam.players {
@@ -276,6 +248,41 @@ struct GameDetailView: View {
                 
                 if let players = detailedGame.awayTeam.players {
                     TeamLineupView(team: detailedGame.awayTeam, players: players, gameId: gameId)
+                }
+            } else {
+                loadingAdditionalInfo
+            }
+        }
+    }
+    
+    private var loadingAdditionalInfo: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Loading Game Information")
+                .font(.title3)
+                .fontWeight(.bold)
+                .padding(.horizontal)
+            
+            ForEach(0..<2) { _ in
+                VStack(alignment: .leading, spacing: 10) {
+                    ShimmerLoadingView()
+                        .frame(width: 120, height: 20)
+                        .padding(.horizontal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 15) {
+                            ForEach(0..<5) { _ in
+                                VStack {
+                                    ShimmerLoadingView()
+                                        .frame(width: 70, height: 70)
+                                        .clipShape(Circle())
+                                    ShimmerLoadingView()
+                                        .frame(width: 60, height: 12)
+                                }
+                                .frame(width: 100)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
                 }
             }
         }
@@ -793,15 +800,18 @@ enum CardStyle {
 struct InfoCard<Content: View>: View {
     let title: String
     let icon: String
+    let isLoading: Bool
     let content: () -> Content
     
     init(
         title: String,
         icon: String,
+        isLoading: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
         self.icon = icon
+        self.isLoading = isLoading
         self.content = content
     }
     
@@ -815,6 +825,10 @@ struct InfoCard<Content: View>: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                }
             }
             
             content()
@@ -852,6 +866,8 @@ struct StatColumn: View {
         self.teamColor = teamColor
         self.showBar = showBar
         self.isLeftTeam = isLeftTeam
+
+        print("StatColumn initialized with values: \(values)")
     }
     
     private func percentageFromString(_ string: String) -> Double {
@@ -929,18 +945,25 @@ struct StatBar: View {
     }
 }
 
-private func matchStatsCard(_ game: Game) -> some View {
+private func matchStatsCard(_ game: Game, _ viewModel: GameDetailViewModel,isStatsLoaded: Bool) -> some View {
     InfoCard(title: "Match Stats", icon: "chart.bar.fill") {
-        VStack(spacing: CardStyle.spacing) {
+        if(isStatsLoaded){
+      VStack(spacing: CardStyle.spacing) {
             HStack(spacing: 0) {
-                StatColumn(title: game.homeTeam.name, values: ["12"])
-                StatColumn(title: "", values: ["Shots"], isCenter: true)
-                StatColumn(title: game.awayTeam.name, values: ["9"])
+                StatColumn(
+                    title: game.homeTeam.name,
+                    values: [String(viewModel.homeStatistics.first?.finish ?? 0)]
+                )
+                StatColumn(title: "", values: ["Finishes"], isCenter: true)
+                StatColumn(
+                    title: game.awayTeam.name,
+                    values: [String(viewModel.awayStatistics.first?.finish ?? 0)]
+                )
             }
             
             StatBar(
-                leftValue: 12,
-                rightValue: 9,
+                leftValue: viewModel.homeStatistics.first?.finish ?? 0,
+                rightValue: viewModel.awayStatistics.first?.finish ?? 0,
                 leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
                 rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
             )
@@ -950,14 +973,14 @@ private func matchStatsCard(_ game: Game) -> some View {
             // Add more stats with their respective bars...
             Group {
                 HStack(spacing: 0) {
-                    StatColumn(title: "", values: ["8"])
-                    StatColumn(title: "", values: ["Corners"], isCenter: true)
-                    StatColumn(title: "", values: ["4"])
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.passes ?? 0)])
+                    StatColumn(title: "", values: ["Passes"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.passes ?? 0)])
                 }
                 
                 StatBar(
-                    leftValue: 8,
-                    rightValue: 4,
+                    leftValue: viewModel.homeStatistics.first?.passes ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.passes ?? 0,
                     leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
                     rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
                 )
@@ -965,19 +988,142 @@ private func matchStatsCard(_ game: Game) -> some View {
                 .padding(.bottom, 8)
                 
                 HStack(spacing: 0) {
-                    StatColumn(title: "", values: ["55%"])
-                    StatColumn(title: "", values: ["Possession"], isCenter: true)
-                    StatColumn(title: "", values: ["45%"])
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.defense ?? 0)])
+                    StatColumn(title: "", values: ["Saves"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.defense ?? 0)])
                 }
                 
                 StatBar(
-                    leftValue: 55,
-                    rightValue: 45,
+                    leftValue: viewModel.homeStatistics.first?.defense ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.defense ?? 0,
                     leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
                     rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
                 )
                 .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.interception ?? 0)])
+                    StatColumn(title: "", values: ["Interceptions"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.interception ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.interception ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.interception ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.tackle ?? 0)])
+                    StatColumn(title: "", values: ["Tackles"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.tackle ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.tackle ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.tackle ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.foul ?? 0)])
+                    StatColumn(title: "", values: ["Fouls"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.foul ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.foul ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.foul ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.penalty ?? 0)])
+                    StatColumn(title: "", values: ["Penalty Kicks"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.penalty ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.penalty ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.penalty ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.yellowCard ?? 0)])
+                    StatColumn(title: "", values: ["Yellow Cards"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.yellowCard ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.yellowCard ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.yellowCard ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.redCard ?? 0)])
+                    StatColumn(title: "", values: ["Red Cards"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.redCard ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.redCard ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.redCard ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.offside ?? 0)])
+                    StatColumn(title: "", values: ["Offsides"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.offside ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.offside ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.offside ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+                HStack(spacing: 0) {
+                    StatColumn(title: "", values: [String(viewModel.homeStatistics.first?.corner ?? 0)])
+                    StatColumn(title: "", values: ["Corners"], isCenter: true)
+                    StatColumn(title: "", values: [String(viewModel.awayStatistics.first?.corner ?? 0)])
+                }
+                
+                StatBar(
+                    leftValue: viewModel.homeStatistics.first?.corner ?? 0,
+                    rightValue: viewModel.awayStatistics.first?.corner ?? 0,
+                    leftColor: Color(hex: game.homeTeam.colors?[0] ?? "#FFFFFF"),
+                    rightColor: Color(hex: game.awayTeam.colors?[0] ?? "#00C0FF")
+                )
+                .padding(.horizontal)
+                .padding(.bottom, 8)
             }
+        }
+        } else {
+            ProgressView()
         }
     }
 }
@@ -1047,7 +1193,7 @@ private func headToHeadCard(_ game: Game) -> some View {
                     Text("15")
                         .font(.system(.title2, weight: .bold))
                         .foregroundStyle(.green)
-                    Text("Wins")
+                    Text("AVS Futebol")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1066,7 +1212,7 @@ private func headToHeadCard(_ game: Game) -> some View {
                     Text("12")
                         .font(.system(.title2, weight: .bold))
                         .foregroundStyle(.red)
-                    Text("Losses")
+                    Text("Estoril Praia")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1112,4 +1258,5 @@ private func formGuideCard(_ game: Game) -> some View {
         }
     }
 }
+
 

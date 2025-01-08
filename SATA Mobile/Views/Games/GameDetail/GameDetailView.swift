@@ -12,6 +12,7 @@ struct GameDetailView: View {
     @State private var showVideoPlayer = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isStatsLoaded = false
+    @State private var isEventsLoaded = false
     
     @State var userPrompt = ""
     @State private var isTextExpanded = false
@@ -20,6 +21,7 @@ struct GameDetailView: View {
     @State private var isListening = false
     @State private var animationScale: CGFloat = 1.0
     @State private var activity: Activity<GameActivityAttributes>?
+    
     
     private func startLiveActivity() {
         Task {
@@ -134,6 +136,7 @@ struct GameDetailView: View {
             await viewModel.fetchHomeStatistics(gameId: gameId)
             await viewModel.fetchAwayStatistics(gameId: gameId)
             isStatsLoaded = true
+            isEventsLoaded = true
             if let game = viewModel.game {
                 print("Fetched home statistics:", viewModel.homeStatistics)
                 print("Fetched away statistics:", viewModel.awayStatistics)
@@ -181,7 +184,7 @@ struct GameDetailView: View {
             case .loaded:
                 if let detailedGame = viewModel.game {
                     matchStatsCard(game,viewModel,isStatsLoaded: isStatsLoaded)
-                    eventsCard(game, viewModel)
+                    eventsCard(game, viewModel, isEventsLoaded: isEventsLoaded)
                 }
             }
         }
@@ -1127,8 +1130,9 @@ struct FormIndicator: View {
 }
 
 // Modify eventsCard to include game parameter
-private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel) -> some View {
+private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel,isEventsLoaded: Bool) -> some View {
     InfoCard(title: "Key Events", icon: "clock.fill") {
+        if(isEventsLoaded){
         ScrollView {
             HStack(alignment: .top, spacing: 30) {
                 VStack(alignment: .leading, spacing: 10) {
@@ -1157,6 +1161,9 @@ private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel) -> some 
                 .frame(maxWidth: .infinity)
             }
         }
+        } else {
+            ProgressView()
+        }   
     }
 }
 
@@ -1202,6 +1209,7 @@ private func headToHeadCard(_ game: Game) -> some View {
                 .foregroundStyle(.secondary)
         }
     }
+
 }
 
 // Modify formGuideCard to include game parameter

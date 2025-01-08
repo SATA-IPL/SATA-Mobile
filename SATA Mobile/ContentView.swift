@@ -30,6 +30,7 @@ struct ContentView: View {
     @StateObject private var teamsViewModel = TeamsViewModel()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding = false
+    @State private var showTeamSelection = false
     
     @State private var selectedTab: Tab = Tab.games
     
@@ -54,8 +55,31 @@ struct ContentView: View {
                         }
                         
                         NavigationStack {
-                            MyTeamView()
-                                .navigationTitle(teamsViewModel.currentTeamName ?? "Choose a Team")
+                            if let team = teamsViewModel.team {
+                                MyTeamView(team: team)
+                            } else {
+                                ZStack {
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                    .ignoresSafeArea()
+                                    
+                                    ContentUnavailableView {
+                                        Label("No Team Selected", systemImage: "star.slash")
+                                    } description: {
+                                        Text("Select your favorite team to see their stats and upcoming games")
+                                    } actions: {
+                                        Button(action: { showTeamSelection = true }) {
+                                            Text("Choose Team")
+                                                .fontWeight(.bold)
+                                        }
+                                        .buttonStyle(.borderedProminent)
+                                    }
+                                }
+                                .navigationTitle("Choose Team")
+                            }
                         }
                         .tag(Tab.myTeam)
                         .tabItem {
@@ -79,6 +103,9 @@ struct ContentView: View {
             }) {
                 OnboardingView()
                 .preferredColorScheme(.dark)
+            }
+            .sheet(isPresented: $showTeamSelection) {
+                TeamSelectionView(teamsViewModel: teamsViewModel)
             }
             .onAppear {
                 if !hasSeenOnboarding {

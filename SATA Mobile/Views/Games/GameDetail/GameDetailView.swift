@@ -347,12 +347,12 @@ struct TeamView: View {
     let score: Int
     
     var body: some View {
-        VStack(spacing:0) {
+        VStack(spacing: 0) {
             Text("\(score)")
                 .foregroundStyle(.primary)
                 .font(.system(size: 75, weight: .black, design: .default).width(.compressed))
             if let imageUrl = team.image {
-                NavigationLink(destination: TeamDetailView(team: team)) {
+                NavigationLink(destination: MyTeamView(team: team)) {  // Update this line
                     AsyncImage(url: URL(string: imageUrl)) { image in
                         image.resizable()
                     } placeholder: {
@@ -1242,5 +1242,3 @@ private func formGuideCard(_ game: Game) -> some View {
         }
     }
 }
-
-

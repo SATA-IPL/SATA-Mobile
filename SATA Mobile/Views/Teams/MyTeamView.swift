@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct MyTeamView: View {
-    let team: Team
     @EnvironmentObject private var viewModel: TeamsViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    let team: Team
     
     enum TeamSection: String, CaseIterable {
         case overview = "Overview"
@@ -11,65 +11,45 @@ struct MyTeamView: View {
         case matches = "Matches"
     }
     @State private var selectedSection: TeamSection = .overview
-    
+    @State private var selectedPlayer: Player?
+    @State private var hasLoadedSquad = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    if let team = viewModel.team {
-                        // Team Header
-                        teamHeader(team)
-                        
-                        // Section Selector
-                        CustomSegmentedControl(
-                            selectedSection: $selectedSection,
-                            sections: TeamSection.allCases
-                        )
-                        .padding(.vertical, 8)
-                        
-                        // Content Sections
-                        switch selectedSection {
-                        case .overview:
-                            overviewSection
-                        case .squad:
-                            squadSection
-                        case .matches:
-                            matchesSection
-                        }
-                    } else {
-                        ContentUnavailableView {
-                            Label("Select Your Team", systemImage: "star.fill")
-                        } description: {
-                            Text("Choose your favorite team to see their stats and updates")
-                        } actions: {
-                            Button(action: { /* Team selection action */ }) {
-                                Text("Select Team")
-                                    .fontWeight(.semibold)
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .frame(maxHeight: .infinity)
-                        .frame(minHeight: UIScreen.main.bounds.height * 0.7)
+                    // Team Header
+                    teamHeader(team)
+                    
+                    // Section Selector
+                    CustomSegmentedControl(
+                        selectedSection: $selectedSection,
+                        sections: TeamSection.allCases
+                    )
+                    .padding(.vertical, 8)
+                    
+                    // Content Sections
+                    switch selectedSection {
+                    case .overview:
+                        overviewSection
+                    case .squad:
+                        squadSection
+                    case .matches:
+                        matchesSection
                     }
                 }
             }
             .background {
-                if let team = viewModel.team {
-                    teamBackground(teamColor: team.colors?[0] ?? "#FFFFFF")
-                } else {
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .ignoresSafeArea()
-                }
+                teamBackground(teamColor: team.colors?[0] ?? "#FFFFFF")
             }
-            .navigationTitle("My Team")
+            .navigationTitle(team.name)
             .navigationBarTitleDisplayMode(.large)
-            .task {
-                await viewModel.fetchTeamDetails()
-                await viewModel.fetchTeamPlayers(team_Id: viewModel.team?.id ?? "")
+            .onAppear {
+                // Reset loaded flag when view appears
+                hasLoadedSquad = false
+                Task {
+                    await viewModel.fetchTeamDetails()
+                }
             }
         }
     }
@@ -147,35 +127,187 @@ struct MyTeamView: View {
     }
     
     private var squadSection: some View {
-     VStack {
-         if viewModel.state == .loading {
-             ProgressView()
-         } else if viewModel.squad.isEmpty {
-             Text("No players available")
-                 .foregroundColor(.secondary)
-         } else {
-             LazyVGrid(columns: [
-                 GridItem(.flexible()),
-                 GridItem(.flexible())
-             ], spacing: 16) {
-                 ForEach(viewModel.squad) { player in
-                     NavigationLink(destination: PlayerDetailView(playerId: player.id, team: team, gameId: 0)) {
-                         PlayerCard(player: player)
-                     }
-                 }
-             }
-         }
-     }
-     .padding()
- }
-    
-    private var matchesSection: some View {
-        VStack(spacing: 16) {
-            ForEach(viewModel.matches) { match in
-                MatchRow(match: match)
+        VStack {
+            if !hasLoadedSquad {
+                ProgressView()
+            } else if viewModel.squad.isEmpty {
+                Text("No players available")
+                    .foregroundColor(.secondary)
+            } else {
+                LazyVGrid(columns: [
+                    GridItem(.adaptive(minimum: 160, maximum: 180), spacing: 16)
+                ], spacing: 16) {
+                    ForEach(viewModel.squad) { player in
+                        EnhancedPlayerCard(
+                            player: player,
+                            teamColor: Color(hex: team.colors?[0] ?? "#000000")
+                        )
+                        .onTapGesture {
+                            selectedPlayer = player
+                        }
+                    }
+                }
             }
         }
         .padding()
+        .task {
+            if !hasLoadedSquad {
+                await viewModel.fetchTeamPlayers(team_Id: team.id)
+                hasLoadedSquad = true
+            }
+        }
+        .sheet(item: $selectedPlayer) { player in
+            NavigationStack {
+                PlayerDetailView(playerId: player.id, team: team, gameId: 0)
+            }
+        }
+    }
+
+    struct EnhancedPlayerCard: View {
+        let player: Player
+        let teamColor: Color
+        
+        var body: some View {
+            VStack(spacing: 12) {
+                // Player Image
+                ZStack(alignment: .bottomTrailing) {
+                    AsyncImage(url: URL(string: player.image)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Image(systemName: "person.crop.circle.fill")
+                            .resizable()
+                            .foregroundStyle(.gray.opacity(0.3))
+                    }
+                    .frame(width: 90, height: 90)
+                    .clipShape(Circle())
+                    .overlay {
+                        Circle()
+                            .strokeBorder(teamColor, lineWidth: 3)
+                    }
+                    
+                    // Player Number Badge
+                    Text("\(player.shirtNumber)")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(teamColor)
+                        .clipShape(Circle())
+                        .overlay {
+                            Circle()
+                                .strokeBorder(.white, lineWidth: 2)
+                        }
+                        .offset(x: 5, y: 5)
+                }
+                
+                // Player Info
+                VStack(spacing: 4) {
+                    Text(player.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .lineLimit(1)
+                        .foregroundStyle(.white)
+                    
+                    Text(player.position)
+                        .font(.system(size: 13, weight: .medium))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(teamColor.opacity(0.8))
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                }
+                .font(.system(size: 12))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+            }
+        }
+    }
+
+    struct StatItem: View {
+        let value: String
+        let label: String
+        
+        var body: some View {
+            VStack(spacing: 2) {
+                Text(value)
+                    .fontWeight(.bold)
+                Text(label)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+    
+    private var matchesSection: some View {
+        VStack(spacing: 16) {
+            if viewModel.matches.isEmpty {
+                ContentUnavailableView {
+                    Label("No Matches", systemImage: "sportscourt")
+                } description: {
+                    Text("Match information will appear here")
+                }
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(viewModel.matches) { match in
+                        MatchRow(match: match)
+                    }
+                }
+            }
+        }
+        .padding()
+    }
+
+    struct MatchRow: View {
+        let match: Match
+        
+        var body: some View {
+            HStack {
+                // Result indicator
+                Circle()
+                    .fill(resultColor)
+                    .frame(width: 8, height: 8)
+                
+                // Date
+                Text(match.date)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 80, alignment: .leading)
+                
+                // Match details
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(match.opponent)
+                        .font(.headline)
+                    Text(match.competition)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                // Score
+                Text(match.score)
+                    .font(.headline)
+                    .monospacedDigit()
+            }
+            .padding()
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.background)
+                    .shadow(color: .black.opacity(0.05), radius: 3, y: 2)
+            }
+        }
+        
+        private var resultColor: Color {
+            switch match.result.lowercased() {
+            case "w": return .green
+            case "l": return .red
+            default: return .yellow
+            }
+        }
     }
     
     private func teamBackground(teamColor: String) -> some View {

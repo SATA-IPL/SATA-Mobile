@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MyTeamView: View {
+    let team: Team
     @EnvironmentObject private var viewModel: TeamsViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -68,6 +69,7 @@ struct MyTeamView: View {
             .navigationBarTitleDisplayMode(.large)
             .task {
                 await viewModel.fetchTeamDetails()
+                await viewModel.fetchTeamPlayers(team_Id: viewModel.team?.id ?? "")
             }
         }
     }
@@ -145,20 +147,27 @@ struct MyTeamView: View {
     }
     
     private var squadSection: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ], spacing: 16) {
-            ForEach(viewModel.squad) { player in
-                if let team = viewModel.team {
-                    NavigationLink(destination: PlayerDetailView(playerId: player.id, team: team, gameId: 0)) {
-                        PlayerCard(player: player)
-                    }
-                }
-            }
-        }
-        .padding()
-    }
+     VStack {
+         if viewModel.state == .loading {
+             ProgressView()
+         } else if viewModel.squad.isEmpty {
+             Text("No players available")
+                 .foregroundColor(.secondary)
+         } else {
+             LazyVGrid(columns: [
+                 GridItem(.flexible()),
+                 GridItem(.flexible())
+             ], spacing: 16) {
+                 ForEach(viewModel.squad) { player in
+                     NavigationLink(destination: PlayerDetailView(playerId: player.id, team: team, gameId: 0)) {
+                         PlayerCard(player: player)
+                     }
+                 }
+             }
+         }
+     }
+     .padding()
+ }
     
     private var matchesSection: some View {
         VStack(spacing: 16) {

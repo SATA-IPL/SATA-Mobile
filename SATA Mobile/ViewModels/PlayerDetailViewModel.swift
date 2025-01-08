@@ -18,7 +18,7 @@ class PlayerDetailViewModel: ObservableObject {
             print("🌐 Fetching player detail from network...")
             let (data, _) = try await URLSession.shared.data(from: url)
             print("✅ Player detail data received: \(data.count) bytes")
-            
+            1
             // Print received JSON for debugging
             // if let jsonString = String(data: data, encoding: .utf8) {
             //     print("📄 Received JSON: \(jsonString)")

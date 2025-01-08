@@ -42,6 +42,7 @@ struct TeamDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.fetchTeamDetails(teamId: team.id)
+            await viewModel.fetchTeamPlayers(team_Id: team.id)
         }
     }
     
@@ -141,19 +142,28 @@ struct TeamDetailView: View {
         .padding()
     }
     
-    private var squadSection: some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ], spacing: 16) {
-            ForEach(viewModel.squad) { player in
-                NavigationLink(destination: PlayerDetailView(playerId: player.id, team: team, gameId: 0)) {
-                    PlayerCard(player: player)
+   private var squadSection: some View {
+    VStack {
+        if viewModel.state == .loading {
+            ProgressView()
+        } else if viewModel.squad.isEmpty {
+            Text("No players available")
+                .foregroundColor(.secondary)
+        } else {
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                ForEach(viewModel.squad) { player in
+                    NavigationLink(destination: PlayerDetailView(playerId: player.id, team: team, gameId: 0)) {
+                        PlayerCard(player: player)
+                    }
                 }
             }
         }
-        .padding()
     }
+    .padding()
+}
     
     private var matchesSection: some View {
         VStack(spacing: 16) {

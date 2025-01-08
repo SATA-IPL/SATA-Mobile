@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct MyTeamView: View {
-    @EnvironmentObject private var viewModel: TeamsViewModel
+    @StateObject private var viewModel = TeamDetailViewModel() // Add dedicated view model
+    @EnvironmentObject private var teamsViewModel: TeamsViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let team: Team
     
@@ -44,12 +45,10 @@ struct MyTeamView: View {
             }
             .navigationTitle(team.name)
             .navigationBarTitleDisplayMode(.large)
-            .onAppear {
-                // Reset loaded flag when view appears
-                hasLoadedSquad = false
-                Task {
-                    await viewModel.fetchTeamDetails()
-                }
+            .task {
+                // Use dedicated view model instead of shared TeamsViewModel
+                await viewModel.fetchTeamDetails(teamId: team.id)
+                await viewModel.fetchTeamPlayers(team_Id: team.id)
             }
         }
     }
@@ -128,9 +127,7 @@ struct MyTeamView: View {
     
     private var squadSection: some View {
         VStack {
-            if !hasLoadedSquad {
-                ProgressView()
-            } else if viewModel.squad.isEmpty {
+            if viewModel.squad.isEmpty {
                 Text("No players available")
                     .foregroundColor(.secondary)
             } else {
@@ -150,12 +147,6 @@ struct MyTeamView: View {
             }
         }
         .padding()
-        .task {
-            if !hasLoadedSquad {
-                await viewModel.fetchTeamPlayers(team_Id: team.id)
-                hasLoadedSquad = true
-            }
-        }
         .sheet(item: $selectedPlayer) { player in
             NavigationStack {
                 PlayerDetailView(playerId: player.id, team: team, gameId: 0)

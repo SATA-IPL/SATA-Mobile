@@ -86,83 +86,98 @@ class TeamsViewModel: ObservableObject {
     }
     
     func setTeam(team: Team) {
+        // Clear everything first
+        clearTeamData()
+        
+        // Set new team
         self.team = team
-        let teamId = team.id
-        UserDefaults.standard.set(teamId, forKey: "teamId")
-        selectedTeamId = teamId
+        self.selectedTeamId = team.id
+        UserDefaults.standard.set(team.id, forKey: "teamId")
         
-        // Clear existing squad data
-        squad = []
-        
-        // Fetch team details when team is selected
+        // Fetch new team data
         Task {
             await fetchTeamDetails()
         }
     }
     
+    private func clearTeamData() {
+        // Reset all team-specific data
+        squad = []
+        matches = []
+        teamStats = TeamStats()
+        recentForm = []
+        nextMatch = nil
+        state = .loading
+        
+        // Cancel any ongoing fetch
+        fetchTask?.cancel()
+        fetchTask = nil
+    }
+    
     func fetchTeamDetails() async {
         guard let teamId = currentTeam else { return }
         
+        // Clear existing data before fetching new data
+        clearTeamData()
+        
+        // Ensure we have the correct team object
         if let selectedTeam = teams.first(where: { $0.id == teamId }) {
             team = selectedTeam
         }
         
-        // Fetch team details using teamId
-        // For now, using mock data
-        teamStats = TeamStats(
-            matches: 38,
-            wins: 25,
-            losses: 8,
-            goalsFor: 80,
-            goalsAgainst: 35,
-            cleanSheets: 15
-        )
-        
-        recentForm = ["W", "W", "D", "L", "W"]
-        
-        nextMatch = NextMatch(
-            opponent: "Sporting CP",
-            date: "2024-03-15",
-            competition: "League Cup"
-        )
-        
-        // Fetch matches
-        if let teamId = currentTeam {
+        // Fetch all team data
+        do {
+            // Fetch squad first
+            await fetchTeamPlayers(team_Id: teamId)
+            
+            // Then fetch matches
             await fetchTeamMatches(teamId: teamId)
+            
+            // Set other team details
+            teamStats = TeamStats(
+                matches: 38,
+                wins: 25,
+                losses: 8,
+                goalsFor: 80,
+                goalsAgainst: 35,
+                cleanSheets: 15
+            )
+            
+            recentForm = ["W", "W", "D", "L", "W"]
+            
+            nextMatch = NextMatch(
+                opponent: "Sporting CP",
+                date: "2024-03-15",
+                competition: "League Cup"
+            )
+            
+            state = .loaded
+        } catch {
+            state = .error("Failed to fetch team details")
         }
-        
-        // Fetch squad and matches data...
     }
     
     func fetchTeamPlayers(team_Id: String) async {
-        // Clear existing squad before fetching new data
-        squad = []
-        state = .loading
-
         // Cancel any existing fetch task
         fetchTask?.cancel()
         
         // Create new fetch task
         fetchTask = Task {
             guard let url = URL(string: "http://144.24.177.214:5000/clubs/\(team_Id)/players") else {
-                state = .error("Invalid URL")
                 return
             }
             
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
-                
                 if Task.isCancelled { return }
                 
-                do {
-                    squad = try JSONDecoder().decode([Player].self, from: data)
-                    state = .loaded
-                } catch {
-                    state = .error("Decoding error: \(error.localizedDescription)")
+                let newSquad = try JSONDecoder().decode([Player].self, from: data)
+                if !Task.isCancelled {
+                    squad = newSquad
                 }
             } catch {
                 if !Task.isCancelled {
-                    state = .error(error.localizedDescription)
+                    print("Error fetching players: \(error.localizedDescription)")
                 }
             }
         }

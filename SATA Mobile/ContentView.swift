@@ -10,7 +10,6 @@ import SwiftData
 
 enum Tab: String, Hashable {
     case games
-    case calendar
     case myTeam
     case profile
     
@@ -18,8 +17,6 @@ enum Tab: String, Hashable {
         switch self {
         case .games:
             return "Games"
-        case .calendar:
-            return "Calendar"
         case .myTeam:
             return "My Team"
         case .profile:
@@ -49,20 +46,11 @@ struct ContentView: View {
                     TabView(selection: $selectedTab) {
                         NavigationStack {
                             GamesView()
-                                .navigationTitle("SATA")
+                                .navigationTitle("Games")
                         }
                         .tag(Tab.games)
                         .tabItem {
                             Label("Games", systemImage: "sportscourt.fill")
-                        }
-                        
-                        NavigationStack {
-                            CalendarView()
-                                .navigationTitle("Calendar")
-                        }
-                        .tag(Tab.calendar)
-                        .tabItem {
-                            Label("Calendar", systemImage: "calendar")
                         }
                         
                         NavigationStack {
@@ -97,9 +85,11 @@ struct ContentView: View {
                     showOnboarding = true
                 }
                 
-                // Pre-fetch teams data
+                // Pre-fetch teams and games data
                 Task {
                     await teamsViewModel.fetchTeams()
+                    await gamesViewModel.fetchGames()
+                    
                     if let storedTeamId = UserDefaults.standard.string(forKey: "teamId"),
                        let storedTeam = teamsViewModel.teams.first(where: { $0.id == storedTeamId }) {
                         teamsViewModel.setTeam(team: storedTeam)

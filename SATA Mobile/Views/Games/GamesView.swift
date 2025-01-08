@@ -6,25 +6,46 @@ struct GamesView: View {
     @Namespace private var namespace
     @State private var hasInitiallyFetched = false
     @State private var selectedTeamFilter: Team? = nil
-    
+    @State private var isCalendarMode = false
+    @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
+    @Namespace private var monthAnimation
+    @State private var isTeamsLoading = false
+    @State private var hideOldGames = true
+
     var body: some View {
-            Group { content }
-                .onAppear(perform: handleOnAppear)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.accent.opacity(0.2), Color.accent.opacity(0.01)]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .ignoresSafeArea()
+        Group { content }
+            .onAppear(perform: handleOnAppear)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.accent.opacity(0.2), Color.accent.opacity(0.01)]),
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                .ignoresSafeArea()
+            )
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack {
+                        Button {
+                            withAnimation {
+                                hideOldGames.toggle()
+                            }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        } label: {
+                            Image(systemName: hideOldGames ? "clock.badge.checkmark.fill" : "clock.badge.xmark.fill")
+                                .symbolEffect(.bounce, value: hideOldGames)
+                        }
+                        
+                        viewModeToggle
+                            .symbolEffect(.bounce, value: isCalendarMode)
+                        
                         teamFilterMenu
+                            .symbolEffect(.bounce, value: selectedTeamFilter)
                     }
                 }
+            }
     }
-    
+
     // MARK: - Private Methods
     
     private func handleOnAppear() {
@@ -40,12 +61,21 @@ struct GamesView: View {
         switch viewModel.state {
         case .loading:
             loadingGamesView
+                .transition(.opacity)
         case .error(let message):
             errorView(message: message)
+                .transition(.scale.combined(with: .opacity))
         case .loaded where viewModel.games.isEmpty:
             emptyStateView
+                .transition(.scale.combined(with: .opacity))
         case .loaded:
-            gamesList
+            if isCalendarMode {
+                calendarView
+                    .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+            } else {
+                gamesList
+                    .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing)))
+            }
         }
     }
     
@@ -67,11 +97,12 @@ struct GamesView: View {
                 filteredEmptyStateView
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 16) {
+                    LazyVStack(alignment: .leading, spacing: 20) {
                         ForEach(filteredGames) { game in
                             GameCardView(game: game)
                                 .whenRedacted { $0.hidden() }
                                 .matchedGeometryEffect(id: game.id, in: namespace)
+                                .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
                         }
                     }
                     .padding()
@@ -84,15 +115,6 @@ struct GamesView: View {
         }
     }
 
-    private var filteredGames: [Game] {
-        guard let selectedTeam = selectedTeamFilter else {
-            return viewModel.games
-        }
-        return viewModel.games.filter { game in
-            game.homeTeam.id == selectedTeam.id || game.awayTeam.id == selectedTeam.id
-        }
-    }
-    
     private func errorView(message: String) -> some View {
         ContentUnavailableView {
             Label("Unable to Load Games", systemImage: "wifi.slash")
@@ -142,42 +164,46 @@ struct GamesView: View {
     
     private var teamFilterMenu: some View {
         Menu {
-            Button {
-                selectedTeamFilter = nil
-            } label: {
-                HStack {
-                    Text("All Teams")
-                    if selectedTeamFilter == nil {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
-            
-            if let favoriteTeamId = UserDefaults.standard.string(forKey: "teamId"),
-               let favoriteTeam = teamsViewModel.teams.first(where: { $0.id == favoriteTeamId }) {
+            if isTeamsLoading {
+                Text("Loading teams...")
+            } else {
                 Button {
-                    selectedTeamFilter = favoriteTeam
+                    selectedTeamFilter = nil
                 } label: {
                     HStack {
-                        Text(favoriteTeam.name)
-                        Image(systemName: "star.fill")
-                        if selectedTeamFilter?.id == favoriteTeam.id {
+                        Text("All Teams")
+                        if selectedTeamFilter == nil {
                             Image(systemName: "checkmark")
                         }
                     }
                 }
-            }
-            
-            Divider()
-            
-            ForEach(teamsViewModel.teams.sorted(by: { $0.name < $1.name }), id: \.id) { team in
-                Button {
-                    selectedTeamFilter = team
-                } label: {
-                    HStack {
-                        Text(team.name)
-                        if selectedTeamFilter?.id == team.id {
-                            Image(systemName: "checkmark")
+                
+                if let favoriteTeamId = UserDefaults.standard.string(forKey: "teamId"),
+                   let favoriteTeam = teamsViewModel.teams.first(where: { $0.id == favoriteTeamId }) {
+                    Button {
+                        selectedTeamFilter = favoriteTeam
+                    } label: {
+                        HStack {
+                            Text(favoriteTeam.name)
+                            Image(systemName: "star.fill")
+                            if selectedTeamFilter?.id == favoriteTeam.id {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+                
+                Divider()
+                
+                ForEach(teamsViewModel.teams.sorted(by: { $0.name < $1.name }), id: \.id) { team in
+                    Button {
+                        selectedTeamFilter = team
+                    } label: {
+                        HStack {
+                            Text(team.name)
+                            if selectedTeamFilter?.id == team.id {
+                                Image(systemName: "checkmark")
+                            }
                         }
                     }
                 }
@@ -186,9 +212,178 @@ struct GamesView: View {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
         }
         .onAppear {
-            Task {
+            Task { @MainActor in
+                isTeamsLoading = true
                 await teamsViewModel.fetchTeams()
+                isTeamsLoading = false
             }
         }
     }
+
+    private var viewModeToggle: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isCalendarMode.toggle()
+            }
+        } label: {
+            Image(systemName: isCalendarMode ? "list.bullet" : "calendar")
+        }
+    }
+
+    private var calendarView: some View {
+        VStack(spacing: 0) {
+            monthPickerView
+                .zIndex(1)
+            
+            ScrollView {
+                if hasGamesForSelectedMonth {
+                    LazyVStack(spacing: 24, pinnedViews: [.sectionHeaders]) {
+                        ForEach(groupedGames.keys.sorted(), id: \.self) { date in
+                            if let games = groupedGames[date],
+                               let monthFromDate = Int(date.split(separator: "-")[1]),
+                               monthFromDate == selectedMonth {
+                                Section {
+                                    ForEach(games) { game in
+                                        GameCardView(game: game)
+                                            .padding(.horizontal)
+                                            .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+                                            .transition(.scale.combined(with: .opacity))
+                                    }
+                                } header: {
+                                    Text(formatDate(date))
+                                        .font(.headline)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding()
+                                        .background(.ultraThinMaterial)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    VStack(spacing: 20) {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 70))
+                            .foregroundStyle(.secondary)
+                            .symbolEffect(.bounce, options: .repeat(2))
+                        
+                        Text("No Games Scheduled")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("There are no games scheduled for \(DateFormatter().monthSymbols[selectedMonth-1])")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 60)
+                    .frame(maxWidth: .infinity)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .refreshable {
+                await viewModel.fetchGames()
+            }
+        }
+    }
+
+    private var monthPickerView: some View {
+        ScrollViewReader { proxy in
+            VStack(spacing: 0) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(1...12, id: \.self) { month in
+                            VStack(spacing: 8) {
+                                Text(DateFormatter().monthSymbols[month-1])
+                                    .fontWeight(selectedMonth == month ? .bold : .regular)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                ZStack {
+                                    if selectedMonth == month {
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(Color.accentColor)
+                                            .matchedGeometryEffect(id: "monthBackground", in: monthAnimation)
+                                    }
+                                }
+                            )
+                            .padding(.vertical, 12)
+                            .foregroundColor(selectedMonth == month ? .white : .primary)
+                            .id(month)
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedMonth = month
+                                    proxy.scrollTo(month, anchor: .center)
+                                }
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                
+                Divider()
+                    .background(Color.gray.opacity(0.2))
+            }
+            .background(.ultraThinMaterial)
+        }
+    }
+
+    // MARK: - Helper Properties and Methods
+
+    private var filteredGames: [Game] {
+        var games = viewModel.games
+        
+        if hideOldGames {
+            let today = Calendar.current.startOfDay(for: Date())
+            games = games.filter { game in
+                if let gameDate = DateFormatter.yyyyMMdd.date(from: game.date) {
+                    return Calendar.current.startOfDay(for: gameDate) >= today
+                }
+                return true
+            }
+        }
+        
+        if let selectedTeam = selectedTeamFilter {
+            games = games.filter { game in
+                game.homeTeam.id == selectedTeam.id || game.awayTeam.id == selectedTeam.id
+            }
+        }
+        
+        return games
+    }
+
+    @MainActor
+    private var groupedGames: [String: [Game]] {
+        Dictionary(grouping: filteredGames) { game in
+            game.date
+        }
+    }
+
+    private var hasGamesForSelectedMonth: Bool {
+        groupedGames.keys.contains { date in
+            if let monthFromDate = Int(date.split(separator: "-")[1]) {
+                return monthFromDate == selectedMonth
+            }
+            return false
+        }
+    }
+
+    private func formatDate(_ dateString: String) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        guard let date = dateFormatter.date(from: dateString) else { return dateString }
+        
+        dateFormatter.dateFormat = "EEEE, MMMM d"
+        return dateFormatter.string(from: date)
+    }
+}
+
+// Add this extension at the bottom of the file
+extension DateFormatter {
+    static let yyyyMMdd: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }

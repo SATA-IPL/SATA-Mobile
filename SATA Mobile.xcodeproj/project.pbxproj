@@ -14,6 +14,7 @@
 		16A657DD2D2ADFAA00A623D8 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16A657BB2D2ADC0B00A623D8 /* SwiftUI.framework */; };
 		16A657E82D2ADFAC00A623D8 /* SATA_LiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 16A657DB2D2ADFAA00A623D8 /* SATA_LiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		16A658242D2B5D3E00A623D8 /* OnBoardingKit in Frameworks */ = {isa = PBXBuildFile; productRef = 16A658232D2B5D3E00A623D8 /* OnBoardingKit */; };
+		4C5C49142D2DD1C000FD4DF5 /* EventSource in Frameworks */ = {isa = PBXBuildFile; productRef = 4C5C49132D2DD1C000FD4DF5 /* EventSource */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -126,6 +127,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C5C49142D2DD1C000FD4DF5 /* EventSource in Frameworks */,
 				16A658242D2B5D3E00A623D8 /* OnBoardingKit in Frameworks */,
 				16A657A22D2AC69200A623D8 /* Shimmer in Frameworks */,
 				160182952D20CA46009DA2EF /* BezelKit in Frameworks */,
@@ -231,6 +233,7 @@
 				161BCB802D25BA8900FA776A /* GoogleGenerativeAI */,
 				16A657A12D2AC69200A623D8 /* Shimmer */,
 				16A658232D2B5D3E00A623D8 /* OnBoardingKit */,
+				4C5C49132D2DD1C000FD4DF5 /* EventSource */,
 			);
 			productName = "SATA Mobile";
 			productReference = 16ECB2E32D1DD9D200367F2A /* SATA.app */;
@@ -322,6 +325,7 @@
 				161BCB7F2D25BA8900FA776A /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
 				16A657A02D2AC69200A623D8 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
 				16A658222D2B5D3E00A623D8 /* XCRemoteSwiftPackageReference "OnBoardingKit" */,
+				4C5C49122D2DD1C000FD4DF5 /* XCRemoteSwiftPackageReference "EventSource" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 16ECB2E42D1DD9D200367F2A /* Products */;
@@ -857,6 +861,14 @@
 				minimumVersion = 1.1.3;
 			};
 		};
+		4C5C49122D2DD1C000FD4DF5 /* XCRemoteSwiftPackageReference "EventSource" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Recouse/EventSource";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -879,6 +891,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 16A658222D2B5D3E00A623D8 /* XCRemoteSwiftPackageReference "OnBoardingKit" */;
 			productName = OnBoardingKit;
+		};
+		4C5C49132D2DD1C000FD4DF5 /* EventSource */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C5C49122D2DD1C000FD4DF5 /* XCRemoteSwiftPackageReference "EventSource" */;
+			productName = EventSource;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

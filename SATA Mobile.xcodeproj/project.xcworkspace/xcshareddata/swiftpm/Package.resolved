@@ -1,5 +1,5 @@
 {
-  "originHash" : "8e792ebe81611eea5bc2b318c68bbb7e329550436fa123ddef301ce6a380e6c1",
+  "originHash" : "919b769e089ad12b3a99e990a792d4db7b8f3dcd1f04160180b50a217773f76d",
   "pins" : [
     {
       "identity" : "bezelkit",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "227b41b77b44463fde8ef851cdc69553ad973a47",
         "version" : "3.2.0"
+      }
+    },
+    {
+      "identity" : "eventsource",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Recouse/EventSource",
+      "state" : {
+        "revision" : "9bd7c5aaba81f06511c4f681643ef991c6ae3477",
+        "version" : "0.1.3"
       }
     },
     {

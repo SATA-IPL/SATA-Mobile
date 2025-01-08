@@ -67,36 +67,38 @@ struct GameDetailView: View {
             ScrollView{
                 VStack(spacing: 0) {
                     // Game header with teams and score
-                    HStack(spacing: 0) {
-                        TeamView(team: game.homeTeam, score: game.homeScore)
-                        Image(systemName: "star.fill")
-                            .opacity(game.homeScore > game.awayScore ? 1 : 0)
-                            .frame(maxWidth: .infinity)
-                        Spacer()
-                        HStack {
-                            VStack {
-                                Text(game.hour)
-                                    .font(.system(.title2, weight: .bold).width(.compressed))
-                                let formattedDate = game.date.components(separatedBy: "-").reversed().joined(separator: "/")
-                                Text(formattedDate)
-                                    .font(.system(.headline, weight: .bold).width(.compressed))
-                                    .foregroundStyle(.secondary)
+                    if let detailedGame = viewModel.game {
+                        HStack(spacing: 0) {
+                            TeamView(team: detailedGame.homeTeam, score: detailedGame.homeScore)
+                            Image(systemName: "star.fill")
+                                .opacity(detailedGame.homeScore > detailedGame.awayScore ? 1 : 0)
+                                .frame(maxWidth: .infinity)
+                            Spacer()
+                            HStack {
+                                VStack {
+                                    Text(detailedGame.hour)
+                                        .font(.system(.title2, weight: .bold).width(.compressed))
+                                    let formattedDate = detailedGame.date.components(separatedBy: "-").reversed().joined(separator: "/")
+                                    Text(formattedDate)
+                                        .font(.system(.headline, weight: .bold).width(.compressed))
+                                        .foregroundStyle(.secondary)
+                                }
                             }
-                        }
-                        .frame(maxWidth: .infinity)
-                        Image(systemName: "star.fill")
-                            .opacity(game.awayScore > game.homeScore ? 1 : 0)
                             .frame(maxWidth: .infinity)
-                        TeamView(team: game.awayTeam, score: game.awayScore)
-                    }
-                    .padding(.horizontal, 35)
-                    if(game.state == "live" || game.state == "finished"){
-                        PillButton(
-                            action: { showVideoPlayer.toggle() },
-                            title: "Watch on SATA+",
-                            icon: "play.circle.fill"
-                        )
-                        .padding(.top, 10)
+                            Image(systemName: "star.fill")
+                                .opacity(detailedGame.awayScore > detailedGame.homeScore ? 1 : 0)
+                                .frame(maxWidth: .infinity)
+                            TeamView(team: detailedGame.awayTeam, score: detailedGame.awayScore)
+                        }
+                        .padding(.horizontal, 35)
+                        if(detailedGame.state == "live" || detailedGame.state == "finished"){
+                            PillButton(
+                                action: { showVideoPlayer.toggle() },
+                                title: "Watch on SATA+",
+                                icon: "play.circle.fill"
+                            )
+                            .padding(.top, 10)
+                        }
                     }
                     
                     
@@ -132,7 +134,8 @@ struct GameDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.fetchGameDetail(id: gameId)
-            await viewModel.fetchEvents(gameId: gameId)
+            //await viewModel.fetchEvents()
+            //await viewModel.fetchEvents(gameId: gameId)
             await viewModel.fetchHomeStatistics(gameId: gameId)
             await viewModel.fetchAwayStatistics(gameId: gameId)
             isStatsLoaded = true
@@ -144,10 +147,16 @@ struct GameDetailView: View {
                 // Start live activity for demo purposes, regardless of game state
                 startLiveActivity()
             }
-
+            
+        }
+        .onAppear {
+            viewModel.startListeningToGameDetails(gameId: gameId)
         }
         .onDisappear {
-            stopLiveActivity()
+            Task {
+                stopLiveActivity()
+                viewModel.stopListeningToGameDetails()
+            }
         }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -183,11 +192,11 @@ struct GameDetailView: View {
                 }
             case .loaded:
                 if let detailedGame = viewModel.game {
-                    matchStatsCard(game,viewModel,isStatsLoaded: isStatsLoaded)
-                    eventsCard(game, viewModel, isEventsLoaded: isEventsLoaded)
-                }
-            }
-        }
+                    matchStatsCard(game, viewModel, isStatsLoaded: isStatsLoaded)
+                    eventsCard(game, viewModel, gameId: gameId)
+                        .onAppear {
+                            print("📊 Events in viewModel: \(viewModel.events)")
+                        }
     }
     
     private var analysisSection: some View {
@@ -351,6 +360,7 @@ struct TeamView: View {
             Text("\(score)")
                 .foregroundStyle(.primary)
                 .font(.system(size: 75, weight: .black, design: .default).width(.compressed))
+                .contentTransition(.numericText())
             if let imageUrl = team.image {
                 NavigationLink(destination: MyTeamView(team: team)) {  // Update this line
                     AsyncImage(url: URL(string: imageUrl)) { image in
@@ -1130,24 +1140,21 @@ struct FormIndicator: View {
 }
 
 // Modify eventsCard to include game parameter
-private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel,isEventsLoaded: Bool) -> some View {
-    InfoCard(title: "Key Events", icon: "clock.fill") {
-        if(isEventsLoaded){
-        ScrollView {
-            HStack(alignment: .top, spacing: 30) {
-                VStack(alignment: .leading, spacing: 10) {
+@MainActor private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel, gameId: Int) -> some View {
+    @State var localEvents: [Event] = viewModel.events
+    
+    return InfoCard(title: "Key Events", icon: "clock.fill") {
                     Text("Match Timeline")
                         .font(.title2.bold())
                     
-                    if viewModel.events.isEmpty {
+                    if localEvents.isEmpty {
                         ContentUnavailableView {
                             Label("No Events", systemImage: "calendar.badge.exclamationmark")
                         } description: {
                             Text("There are no events to display at this time.")
                         }
                     } else {
-                        ForEach(viewModel.events.sorted(by: { $0.minute > $1.minute })) { event in
-                            // Convert string ID to Int for comparison
+                        ForEach(localEvents.sorted(by: { $0.id > $1.id })) { event in
                             let teamId = Int(game.homeTeam.id) ?? 0
                             let team = event.team_id == teamId ? game.homeTeam : game.awayTeam
                             TimelineEventView(
@@ -1158,21 +1165,22 @@ private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel,isEventsL
                         }
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
+            .frame(maxWidth: .infinity)
         }
-        } else {
-            ProgressView()
-        }   
     }
-}
-
-// Modify headToHeadCard to include game parameter
-private func headToHeadCard(_ game: Game) -> some View {
-    InfoCard(title: "Head to Head", icon: "arrow.left.and.right") {
-        VStack(spacing: CardStyle.spacing) {
-            HStack(spacing: 0) {
-                VStack(spacing: 4) {
+    .task {
+        await viewModel.startListeningToEvents(gameId: gameId)
+    }
+    .onDisappear {
+        Task {
+            await viewModel.stopListeningToEvents()
+            print("📊 Stopped listening to events")
+        }
+    }
+    .onChange(of: viewModel.events) { newEvents in
+        print("📊 Events updated: \(newEvents.count) events")
+        localEvents = newEvents
                     Text("15")
                         .font(.system(.title2, weight: .bold))
                         .foregroundStyle(.green)

@@ -1,6 +1,8 @@
 import Foundation
 import GoogleGenerativeAI
 import SwiftUI
+import EventSource
+import Combine
 
 @MainActor
 class GameDetailViewModel: ObservableObject {
@@ -8,9 +10,15 @@ class GameDetailViewModel: ObservableObject {
     @Published var state: ViewState = .loading
     @Published var isLoading = false
     @Published var response: LocalizedStringKey = "How can I help you today?"
-    @Published var events: [Event] = []
+    @Published var events: [Event] = [] {
+        didSet {
+            //print("📊 Events updated: \(events.count) events")
+        }
+    }
     @Published var homeStatistics: [Statistics] = []
     @Published var awayStatistics: [Statistics] = []
+    private var eventSource: EventSource?
+    private var listeningTask: Task<Void, Never>?
     
     private static let config = GenerationConfig(
         temperature: 1,
@@ -85,31 +93,7 @@ class GameDetailViewModel: ObservableObject {
             isLoading = false
         }
     }
-    
-    func fetchEvents(gameId: Int) async {
-            print("📱 Starting to fetch events for game ID: \(gameId)")
-            
-            guard let url = URL(string: "http://144.24.177.214:5000/events/\(gameId)") else {
-                print("❌ Invalid URL for events endpoint")
-                return
-            }
-            
-            do {
-                print("🌐 Fetching events from network...")
-                let (data, _) = try await URLSession.shared.data(from: url)
-                print("✅ Events data received: \(data.count) bytes")
-                
-                // Print received JSON for debugging
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("📄 Received JSON: \(jsonString)")
-                }
-                
-                events = try JSONDecoder().decode([Event].self, from: data)
-                print("📊 Successfully decoded \(events.count) events")
-            } catch {
-                print("❌ Error fetching events: \(error)")
-            }
-        }
+
     func fetchHomeStatistics(gameId: Int) async {
         print("📱 Starting to fetch events for game ID: \(gameId)")
         
@@ -160,5 +144,95 @@ class GameDetailViewModel: ObservableObject {
             print("❌ Error fetching away stats: \(error)")
         }
     }
-}
 
+    func startListeningToEvents(gameId: Int) {
+        listeningTask = Task {
+            guard let url = URL(string: "http://144.24.177.214:5000/events/stream/\(gameId)") else { return }
+            //guard let url = URL(string: "http://localhost:5002/events/stream/33") else { return }
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "GET"
+
+            let eventSource = EventSource()
+            let dataTask = await eventSource.dataTask(for: urlRequest)
+
+            // Event handlers
+            for await event in await dataTask.events() {
+                switch event {
+                case .open:
+                    print("Connection was opened.")
+                case .error(let error):
+                    print("Received an error:", error.localizedDescription)
+                case .event(let event):
+                    let eventData = event.data ?? ""
+                    
+                    if let eventData = eventData.data(using: .utf8) {
+                        do {
+                            let newEvent = try JSONDecoder().decode(Event.self, from: eventData)
+                            DispatchQueue.main.async {
+                                print("📊 Successfully decoded event:", newEvent)
+                                self.events.append(newEvent)
+                            }
+                        } catch {
+                            print("❌ Failed to decode event data:", error)
+                        }
+                    } else {
+                        print("❌ Failed to convert event data to Data")
+                    }
+                case .closed:
+                    print("Connection was closed.")
+                }
+            }
+        }
+    }
+
+    func stopListeningToEvents() {
+        listeningTask?.cancel()
+        listeningTask = nil
+        print("Stopped listening to events.")
+    }
+
+    func startListeningToGameDetails(gameId: Int) {
+        listeningTask = Task {
+            guard let url = URL(string: "http://144.24.177.214:5000/games/stream/\(gameId)") else { return }
+            var urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "GET"
+
+            let eventSource = EventSource()
+            let dataTask = await eventSource.dataTask(for: urlRequest)
+
+            // Event handlers
+            for await event in await dataTask.events() {
+                switch event {
+                case .open:
+                    print("Connection was opened.")
+                case .error(let error):
+                    print("Received an error:", error.localizedDescription)
+                case .event(let event):
+                    let eventData = event.data ?? ""
+                    
+                    if let eventData = eventData.data(using: .utf8) {
+                        do {
+                            let updatedGame = try JSONDecoder().decode(Game.self, from: eventData)
+                            DispatchQueue.main.async {
+                                print("📊 Successfully decoded game details:", updatedGame)
+                                self.game = updatedGame
+                            }
+                        } catch {
+                            print("❌ Failed to decode game data:", error)
+                        }
+                    } else {
+                        print("❌ Failed to convert game data to Data")
+                    }
+                case .closed:
+                    print("Connection was closed.")
+                }
+            }
+        }
+    }
+
+    func stopListeningToGameDetails() {
+        listeningTask?.cancel()
+        listeningTask = nil
+        print("Stopped listening to game details.")
+    }
+}

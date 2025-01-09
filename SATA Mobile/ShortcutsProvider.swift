@@ -64,8 +64,8 @@ struct NextTeamMatchIntent: AppIntent {
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             
-            // First check if response is empty or just "{}"
-            if data.isEmpty || String(data: data, encoding: .utf8) == "{}" {
+            // First check if response is empty or just "[]"
+            if data.isEmpty || String(data: data, encoding: .utf8) == "[]" {
                 response = "There are no scheduled games for your team at the moment."
                 return
             }
@@ -84,7 +84,11 @@ struct NextTeamMatchIntent: AppIntent {
             }
             
             do {
-                let game = try JSONDecoder().decode(UpcomingGame.self, from: data)
+                let games = try JSONDecoder().decode([UpcomingGame].self, from: data)
+                guard let game = games.first else {
+                    response = "There are no scheduled games for your team at the moment."
+                    return
+                }
                 
                 // Format date for natural language
                 let dateFormatter = DateFormatter()
@@ -112,11 +116,8 @@ struct NextTeamMatchIntent: AppIntent {
                 
                 response = message
                 
-            } catch DecodingError.keyNotFound(_, _) {
-                response = "There are no scheduled games for your team at the moment."
-                return
             } catch {
-                print("❌ Error decoding game: \(error.localizedDescription)")
+                print("❌ Error decoding games: \(error.localizedDescription)")
                 response = "Sorry, I couldn't fetch the upcoming game information."
                 return
             }

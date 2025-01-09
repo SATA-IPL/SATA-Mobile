@@ -60,9 +60,20 @@ struct ProfileView: View {
                     }
                 }
                 .listRowBackground(Color.primary.opacity(0.1))
-            
                 
                 Section("App") {
+                    NavigationLink {
+                        TeamListView()
+                    } label: {
+                        Label("Teams", systemImage: "shield.lefthalf.filled")
+                            .foregroundColor(.primary)
+                    }
+                    NavigationLink {
+                        PlayerListView()
+                    } label: {
+                        Label("Players", systemImage: "person.fill")
+                            .foregroundColor(.primary)
+                    }
                     NavigationLink {
                         StadiumListView()
                     } label: {

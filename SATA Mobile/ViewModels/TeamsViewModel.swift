@@ -41,6 +41,23 @@ class TeamsViewModel: ObservableObject {
         return nil
     }
 
+    func fetchTeam(teamId: String) async -> Team? {
+        guard let url = URL(string: "http://144.24.177.214:5000/clubs/\(teamId)") else {
+            print("❌ Invalid URL for team endpoint")
+            return nil
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let team = try JSONDecoder().decode(Team.self, from: data)
+            self.team = team
+            return team
+        } catch {
+            print("❌ Error fetching team: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     func fetchTeams() async {
         print("📱 Starting to fetch teams")
         state = .loading

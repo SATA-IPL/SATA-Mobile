@@ -3,7 +3,10 @@ import SwiftUI
 struct MyTeamView: View {
     @StateObject private var viewModel = TeamDetailViewModel() // Add dedicated view model
     @EnvironmentObject private var teamsViewModel: TeamsViewModel
+    @EnvironmentObject private var stadiumsViewModel: StadiumsViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var showStadium = false
+    @State private var selectedStadium: Stadium?
     let team: Team
     
     enum TeamSection: String, CaseIterable {
@@ -49,6 +52,12 @@ struct MyTeamView: View {
                 // Use dedicated view model instead of shared TeamsViewModel
                 await viewModel.fetchTeamDetails(teamId: team.id)
                 await viewModel.fetchTeamPlayers(team_Id: team.id)
+                if let stadium = await stadiumsViewModel.fetchStadium(teamId: team.id) {
+                    selectedStadium = stadium
+                }
+            }
+            .sheet(item: $selectedStadium) { stadium in
+                StadiumView(viewModel: stadiumsViewModel, stadium: stadium)
             }
         }
     }
@@ -103,21 +112,37 @@ struct MyTeamView: View {
                 }
             }
             
-            // Next Match Card
-            if let nextMatch = viewModel.nextMatch {
-                InfoCard(title: "Next Match", icon: "calendar") {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(nextMatch.opponent)
-                                .font(.headline)
-                            Text(nextMatch.date)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+            // Upcoming Games Card
+            InfoCard(title: "Upcoming Games", icon: "calendar") {
+                if viewModel.upcomingGames.isEmpty {
+                    Text("No upcoming games")
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.upcomingGames) { game in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(viewModel.getFormattedGameDate(game))
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                    HStack {
+                                        Text(game.home_team.name)
+                                            .fontWeight(team.id == String(game.home_team.id) ? .bold : .regular)
+                                        Text("vs")
+                                            .foregroundStyle(.secondary)
+                                        Text(game.away_team.name)
+                                            .fontWeight(team.id == String(game.away_team.id) ? .bold : .regular)
+                                    }
+                                }
+                                Spacer()
+                                Text(game.hour)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if game.id != viewModel.upcomingGames.last?.id {
+                                Divider()
+                            }
                         }
-                        Spacer()
-                        Text(nextMatch.competition)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -151,6 +176,7 @@ struct MyTeamView: View {
             NavigationStack {
                 PlayerDetailView(playerId: player.id, team: team, gameId: 0)
             }
+            .presentationDetents([.medium])
         }
     }
 

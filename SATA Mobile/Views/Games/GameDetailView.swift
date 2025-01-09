@@ -7,6 +7,7 @@ struct GameDetailView: View {
     let game: Game
     let gameId: Int
     @StateObject private var viewModel = GameDetailViewModel()
+    @EnvironmentObject private var stadiumsViewModel: StadiumsViewModel
     var animation: Namespace.ID
     @State private var showStadium = false
     @State private var showVideoPlayer = false
@@ -171,7 +172,7 @@ struct GameDetailView: View {
         }
         .sheet(isPresented: $showStadium) {
             if let stadium = viewModel.game?.stadium {
-                StadiumView(stadium: stadium)
+                StadiumView(viewModel: stadiumsViewModel, stadium: stadium)
             }
         }
         .fullScreenCover(isPresented: $showChat) {

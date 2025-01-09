@@ -211,13 +211,6 @@ struct GamesView: View {
         } label: {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
         }
-        .onAppear {
-            Task { @MainActor in
-                isTeamsLoading = true
-                await teamsViewModel.fetchTeams()
-                isTeamsLoading = false
-            }
-        }
     }
 
     private var viewModeToggle: some View {

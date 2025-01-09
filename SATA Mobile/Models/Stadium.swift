@@ -10,6 +10,7 @@ struct Stadium: Codable, Identifiable {
   let stadiumName: String
   let stadiumSeats: Int
   let yearBuilt: String
+  var isFavorite: Bool = false
   
   enum CodingKeys: String, CodingKey {
     case clubId = "club_id"

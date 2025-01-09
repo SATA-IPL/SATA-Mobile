@@ -4,12 +4,12 @@ struct PlayerDetailView: View {
     let playerId: String
     let team: Team
     let gameId: Int?
-    @StateObject private var viewModel = PlayerDetailViewModel()
+    @EnvironmentObject private var playerViewModel: PlayerViewModel
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         Group {
-            switch viewModel.state {
+            switch playerViewModel.state {
             case .loading:
                 loadingPlayerView
             case .error(let message):
@@ -17,7 +17,7 @@ struct PlayerDetailView: View {
                     systemImage: "person.fill.questionmark",
                     description: Text(message))
             case .loaded:
-                if let player = viewModel.playerDetail {
+                if let player = playerViewModel.selectedPlayer {
                     mainContent(player)
                 }
             }
@@ -31,15 +31,15 @@ struct PlayerDetailView: View {
             ).opacity(0.2)
         )
         .task {
-            await viewModel.fetchPlayerDetail(id: playerId)
+            await playerViewModel.fetchPlayerDetail(id: playerId)
             if let gameId = gameId {  // Only fetch game stats if gameId exists
                 print("🎮 Fetching game stats for gameId: \(gameId)")
-                await viewModel.fetchPlayerGameStats(gameId: gameId, playerId: playerId)
+                await playerViewModel.fetchPlayerGameStats(gameId: gameId, playerId: playerId)
             }
         }
     }
     
-    private func mainContent(_ player: PlayerDetail) -> some View {
+    private func mainContent(_ player: Player) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack {
@@ -54,7 +54,7 @@ struct PlayerDetailView: View {
                     }
                     Spacer()
                     
-                    AsyncImage(url: URL(string: player.imageURL)) { image in
+                    AsyncImage(url: URL(string: player.image)) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -70,26 +70,26 @@ struct PlayerDetailView: View {
                 // Player Info Grid
                 Grid(alignment: .leading, horizontalSpacing: 20, verticalSpacing: 8) {
                     GridRow {
-                        PlayerInfoItem(label: "HEIGHT", value: player.height)
-                        PlayerInfoItem(label: "NATIONALITY", value: player.citizenship)
+                        PlayerInfoItem(label: "HEIGHT", value: player.height ?? "Unknown")
+                        PlayerInfoItem(label: "NATIONALITY", value: player.citizenship ?? "Unknown")
                     }
                     GridRow {
-                        PlayerInfoItem(label: "AGE", value: player.age)
-                        PlayerInfoItem(label: "FOOT", value: player.foot.uppercased())
+                        PlayerInfoItem(label: "AGE", value: player.age ?? "Unknown")
+                        PlayerInfoItem(label: "FOOT", value: player.foot?.uppercased() ?? "Unknown")
                     }
                 }
                 
                 // Season stats
                 HStack {
-                    StatItem(value: player.stats.appearances ?? 0, label: "Games")
+                    StatItem(value: player.stats?.appearances ?? 0, label: "Games")
                     Spacer()
-                    StatItem(value: player.stats.goals ?? 0, label: "Goals")
+                    StatItem(value: player.stats?.goals ?? 0, label: "Goals")
                     Spacer()
-                    StatItem(value: player.stats.assists ?? 0, label: "Assists")
+                    StatItem(value: player.stats?.assists ?? 0, label: "Assists")
                     Spacer()
-                    StatItem(value: player.stats.yellowCards ?? 0, label: "Yellows")
+                    StatItem(value: player.stats?.yellowCards ?? 0, label: "Yellows")
                     Spacer()
-                    StatItem(value: player.stats.redCards ?? 0, label: "Reds")
+                    StatItem(value: player.stats?.redCards ?? 0, label: "Reds")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -97,7 +97,7 @@ struct PlayerDetailView: View {
                 .background(Material.ultraThin)
                 .cornerRadius(15)
                 
-                if let gameStats = viewModel.gameStats {
+                if let gameStats = playerViewModel.gameStats {
                     VStack(alignment: .leading, spacing: 0) {
                         VStack(spacing: 0) {
                             ForEach(Array(Mirror(reflecting: gameStats).children), id: \.label) { child in
@@ -131,6 +131,14 @@ struct PlayerDetailView: View {
                     Image(systemName: "xmark.circle")
                         .foregroundColor(.secondary)
                 }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { 
+                    playerViewModel.toggleFavorite(for: player)
+                }) {
+                    Image(systemName: player.isFavorite ? "star.fill" : "star")
+                }
+                .foregroundStyle(.white)
             }
         }
     }

@@ -60,11 +60,8 @@ struct TeamSelectionView: View {
                     Button("Cancel", role: .cancel) { }
                     Button("Confirm") {
                         if let team = selectedTeam {
-                            Task {
-                                teamsViewModel.setTeam(team: team)
-                                await teamsViewModel.fetchTeams()
-                                dismiss()
-                            }
+                            teamsViewModel.setTeam(team: team)
+                            dismiss()
                         }
                     }
                 } message: {
@@ -93,9 +90,6 @@ struct TeamSelectionView: View {
                        let team = teamsViewModel.teams.first(where: { $0.id == currentId }) {
                         selectedTeam = team
                     }
-                }
-                .task {
-                    await teamsViewModel.fetchTeams()
                 }
             }
         }

@@ -3,10 +3,12 @@ import MapKit
 
 struct StadiumView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var viewModel: StadiumsViewModel
     @State var stadium: Stadium
     @State private var distance: CLLocationDistance = 900
     
-    init(stadium: Stadium, distance: CLLocationDistance = 900) {
+    init(viewModel: StadiumsViewModel, stadium: Stadium, distance: CLLocationDistance = 900) {
+        self.viewModel = viewModel
         _stadium = State(initialValue: stadium)
         _distance = State(initialValue: distance)
         
@@ -48,7 +50,16 @@ struct StadiumView: View {
                 }
                 .preferredColorScheme(.dark)
                 .toolbar(content: {
-                    GlassToolbar(title: "Lisbon", dismiss: dismiss, openInMaps: openInMaps)
+                    GlassToolbar(
+                        title: "Lisbon",
+                        dismiss: dismiss,
+                        openInMaps: openInMaps,
+                        isFavorite: stadium.isFavorite,
+                        toggleFavorite: {
+                            viewModel.toggleFavorite(for: stadium)
+                            stadium.isFavorite.toggle()
+                        }
+                    )
                 })
                 .navigationBarTitleDisplayMode(.inline)
                 .ignoresSafeArea()
@@ -210,6 +221,8 @@ struct GlassToolbar: ToolbarContent {
     let title: String
     let dismiss: DismissAction
     let openInMaps: () -> Void
+    let isFavorite: Bool
+    let toggleFavorite: () -> Void
     
     var body: some ToolbarContent {
          ToolbarItem(placement: .principal) {
@@ -226,6 +239,13 @@ struct GlassToolbar: ToolbarContent {
             }
             .foregroundStyle(.white)
         }
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button(action: toggleFavorite) {
+                Image(systemName: isFavorite ? "star.fill" : "star")
+            }
+            .foregroundStyle(.white)
+        }
+        
         ToolbarItem(placement: .navigationBarTrailing) {
             Button(action: openInMaps) {
                 Image(systemName: "location.fill")

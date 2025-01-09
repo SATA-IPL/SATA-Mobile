@@ -9,9 +9,23 @@ class TeamDetailViewModel: ObservableObject {
     @Published var nextMatch: NextMatch?
     @Published var squad: [Player] = []
     @Published var matches: [Match] = []
+    @Published var upcomingGames: [UpcomingGame] = []
+
+    struct UpcomingGame: Identifiable, Codable {
+        let id = UUID()
+        let away_team: Team
+        let home_team: Team
+        let date: String
+        let hour: String
+        
+        struct Team: Codable {
+            let name: String
+            let id: Int
+        }
+    }
     
     func fetchTeamDetails(teamId: String) async {
-        // Simulate fetching data
+        // Simulate fetching team stats
         teamStats = TeamStats(
             matches: 38,
             wins: 25,
@@ -23,16 +37,62 @@ class TeamDetailViewModel: ObservableObject {
         
         recentForm = ["W", "W", "D", "L", "W"]
         
-        nextMatch = NextMatch(
-            opponent: "Sporting CP",
-            date: "2024-03-15",
-            competition: "League Cup"
-        )
-        
-        // Fetch squad and matches data...
+        // Load upcoming games
+        await fetchUpcomingGames(teamId: Int(teamId) ?? 0)
     }
 
-  func fetchTeamPlayers(team_Id: String) async {
+    func fetchUpcomingGames(teamId: Int) async {
+        print("📱 Fetching upcoming games for team ID: \(teamId)")
+        
+        guard let url = URL(string: "http://144.24.177.214:5000/upcoming/\(teamId)") else {
+            print("❌ Invalid URL for upcoming games endpoint")
+            return
+        }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            if (data.isEmpty || String(data: data, encoding: .utf8) == "[]") {
+                upcomingGames = []
+                return
+            }
+            
+            do {
+                let games = try JSONDecoder().decode([UpcomingGame].self, from: data)
+                upcomingGames = games
+                
+            } catch {
+                print("❌ Error decoding games: \(error.localizedDescription)")
+                upcomingGames = []
+            }
+            
+        } catch {
+            print("❌ Error fetching upcoming games: \(error.localizedDescription)")
+            upcomingGames = []
+        }
+    }
+
+    func getFormattedGameDate(_ game: UpcomingGame) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        guard let date = dateFormatter.date(from: game.date) else { return game.date }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let gameDay = calendar.startOfDay(for: date)
+        
+        let dayDifference = calendar.dateComponents([.day], from: today, to: gameDay).day ?? 0
+        
+        switch dayDifference {
+        case 0: return "Today"
+        case 1: return "Tomorrow"
+        default:
+            dateFormatter.dateFormat = "EEEE, MMMM d"
+            return dateFormatter.string(from: date)
+        }
+    }
+
+    func fetchTeamPlayers(team_Id: String) async {
         print("📱 Starting to fetch players for team ID: \(team_Id)")
         state = .loading
         

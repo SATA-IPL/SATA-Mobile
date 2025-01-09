@@ -28,6 +28,8 @@ enum Tab: String, Hashable {
 struct ContentView: View {
     @StateObject private var gamesViewModel = GamesViewModel()
     @StateObject private var teamsViewModel = TeamsViewModel()
+    @StateObject private var stadiumsViewModel = StadiumsViewModel()
+    @StateObject private var playerViewModel = PlayerViewModel()
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding = false
     @State private var showTeamSelection = false
@@ -55,30 +57,52 @@ struct ContentView: View {
                         }
                         
                         NavigationStack {
-                            if let team = teamsViewModel.team {
-                                MyTeamView(team: team)
-                            } else {
-                                ZStack {
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                    .ignoresSafeArea()
-                                    
-                                    ContentUnavailableView {
-                                        Label("No Team Selected", systemImage: "star.slash")
-                                    } description: {
-                                        Text("Select your favorite team to see their stats and upcoming games")
-                                    } actions: {
-                                        Button(action: { showTeamSelection = true }) {
-                                            Text("Choose Team")
-                                                .fontWeight(.bold)
+                            switch teamsViewModel.state {
+                            case .loading:
+                                ProgressView("Loading team...")
+                                    .navigationTitle("My Team")
+                            case .loaded:
+                                if let team = teamsViewModel.team {
+                                    MyTeamView(team: team)
+                                } else {
+                                    ZStack {
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                        .ignoresSafeArea()
+                                        ContentUnavailableView {
+                                            Label("No Team Selected", systemImage: "star.slash")
+                                        } description: {
+                                            Text("Select your favorite team to see their stats and upcoming games")
+                                        } actions: {
+                                            Button(action: { showTeamSelection = true }) {
+                                                Text("Choose Team")
+                                                    .fontWeight(.bold)
+                                            }
+                                            .buttonStyle(.borderedProminent)
                                         }
-                                        .buttonStyle(.borderedProminent)
                                     }
+                                    .navigationTitle("Choose Team")
                                 }
-                                .navigationTitle("Choose Team")
+                            case .error(let message):
+                                ContentUnavailableView {
+                                    Label("Unable to Load Team", systemImage: "exclamationmark.triangle")
+                                } description: {
+                                    Text(message)
+                                } actions: {
+                                    Button(action: {
+                                        Task {
+                                            await teamsViewModel.fetchTeams()
+                                        }
+                                    }) {
+                                        Text("Try Again")
+                                            .fontWeight(.bold)
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
+                                .navigationTitle("Error")
                             }
                         }
                         .tag(Tab.myTeam)
@@ -125,6 +149,8 @@ struct ContentView: View {
             }
             .environmentObject(gamesViewModel)
             .environmentObject(teamsViewModel)
+            .environmentObject(stadiumsViewModel)
+            .environmentObject(playerViewModel)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenMyTeamView"))) { _ in
             selectedTab = .myTeam

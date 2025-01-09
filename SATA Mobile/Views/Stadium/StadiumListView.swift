@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct StadiumListView: View {
-    @StateObject private var viewModel = StadiumsViewModel()
+    @EnvironmentObject private var stadiumsViewModel: StadiumsViewModel
     @State private var selectedStadium: Stadium?
     @State private var searchText = ""
     
     var filteredStadiums: [Stadium] {
-        guard !searchText.isEmpty else { return viewModel.stadiums }
-        return viewModel.stadiums.filter { stadium in
+        let favoriteFiltered = stadiumsViewModel.filteredStadiums
+        guard !searchText.isEmpty else { return favoriteFiltered }
+        return favoriteFiltered.filter { stadium in
             stadium.stadiumName.localizedCaseInsensitiveContains(searchText)
         }
     }
@@ -22,7 +23,7 @@ struct StadiumListView: View {
             .ignoresSafeArea()
             
             Group {
-                switch viewModel.state {
+                switch stadiumsViewModel.state {
                 case .loading:
                     ProgressView()
                 case .loaded:
@@ -58,11 +59,22 @@ struct StadiumListView: View {
             }
         }
         .navigationTitle("Stadiums")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation(.spring()) {
+                        stadiumsViewModel.showFavoritesOnly.toggle()
+                    }
+                } label: {
+                    Image(systemName: stadiumsViewModel.showFavoritesOnly ? "star.fill" : "star")
+                }
+            }
+        }
         .sheet(item: $selectedStadium) { stadium in
-            StadiumView(stadium: stadium)
+            StadiumView(viewModel: stadiumsViewModel, stadium: stadium)
         }
         .task {
-            await viewModel.fetchStadium()
+            await stadiumsViewModel.fetchStadiums()
         }
     }
 }

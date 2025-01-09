@@ -13,5 +13,6 @@ struct SATA_LiveActivityBundle: WidgetBundle {
     var body: some Widget {
         SATA_LiveActivity()
         OpenAppControl()
+        OpenTeamScreenControl()
     }
 }

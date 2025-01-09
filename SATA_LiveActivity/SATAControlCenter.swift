@@ -15,3 +15,17 @@ struct OpenAppControl: ControlWidget {
         .description("Launches MyApp from Control Center.")
     }
 }
+
+struct OpenTeamScreenControl: ControlWidget {
+    static let kind: String = "com.example.MyApp.OpenTeamScreenControl"
+
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: Self.kind) {
+            ControlWidgetButton(action: ShowTeamGames()) {
+                Label("Show Team on SATA", systemImage: "star.fill")
+            }
+        }
+        .displayName("See Team on SATA")
+        .description("Shows the team on SATA from Control Center.")
+    }
+}

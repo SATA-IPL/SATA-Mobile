@@ -51,6 +51,7 @@ struct MyTeamView: View {
                 // Use dedicated view model instead of shared TeamsViewModel
                 await viewModel.fetchTeamDetails(teamId: team.id)
                 await viewModel.fetchTeamPlayers(team_Id: team.id)
+                await viewModel.fetchFormGuide(teamId: Int(team.id) ?? 0)
             }
         }
     }
@@ -96,14 +97,17 @@ struct MyTeamView: View {
             }
             
             // Form Guide Card
-            InfoCard(title: "Recent Form", icon: "chart.line.uptrend.xyaxis") {
-                HStack(spacing: 8) {
-                    ForEach(viewModel.recentForm, id: \.self) { result in
-                        FormIndicator(result: result)
+                InfoCard(title: "Form Guide", icon: "chart.line.uptrend.xyaxis") {
+                    VStack(spacing: CardStyle.spacing) {
+                        HStack {
+                                HStack(spacing: 4) {
+                                    ForEach(padResults(viewModel.teamLastResults), id: \.self) { result in
+                                        FormIndicator(result: convertResult(result))
+                                    }
+                            }
+                        }
                     }
-                    Spacer()
                 }
-            }
             
             // Upcoming Games Card
             InfoCard(title: "Upcoming Game", icon: "calendar") {
@@ -120,6 +124,22 @@ struct MyTeamView: View {
             }
         }
         .padding(.top)
+    }
+    private func convertResult(_ result: String) -> String {
+        print("🔄 Converting result: \(result)")
+        let converted = switch result.lowercased() {
+            case "win": "W"
+            case "draw": "D"
+            case "loss": "L"
+            default: "-"
+        }
+        print("✅ Converted to: \(converted)")
+        return converted
+    }
+    
+    private func padResults(_ results: [String], count: Int = 5) -> [String] {
+        let padding = Array(repeating: "empty", count: max(0, count - results.count))
+    return Array(results.prefix(count)) + padding
     }
     
     private var squadSection: some View {

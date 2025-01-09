@@ -1,5 +1,15 @@
 import Foundation
 
+struct TeamStats {
+    var matches: Int = 0
+    var wins: Int = 0
+    var losses: Int = 0
+    var goalsFor: Int = 0
+    var goalsAgainst: Int = 0
+    var cleanSheets: Int = 0
+}
+
+
 @MainActor
 class TeamsViewModel: ObservableObject {
     @Published var teams: [Team] = []

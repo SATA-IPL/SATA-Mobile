@@ -3,13 +3,14 @@ import SwiftUI
 
 @MainActor
 class TeamDetailViewModel: ObservableObject {
-    @Published var teamStats = TeamStats()
     @Published var state: ViewState = .loading
+    @Published var teamStats = TeamStats()
     @Published var recentForm: [String] = []
     @Published var nextMatch: Game?
     @Published var squad: [Player] = []
     @Published var games: [Game] = []
     @Published var upcomingGames: [Game] = []
+    @Published var teamLastResults: [String] = [] 
     
     func fetchTeamDetails(teamId: String) async {
         // Simulate fetching team stats
@@ -21,8 +22,6 @@ class TeamDetailViewModel: ObservableObject {
             goalsAgainst: 35,
             cleanSheets: 15
         )
-        
-        recentForm = ["W", "W", "D", "L", "W"]
         
         // Load upcoming games
         await fetchUpcomingGames(teamId: Int(teamId) ?? 0)
@@ -125,7 +124,34 @@ class TeamDetailViewModel: ObservableObject {
             state = .error(error.localizedDescription)
         }
     }
-}
+
+
+   func fetchFormGuide(teamId: Int) async {
+        print("📱 Starting to fetch last games for team: \(teamId)")
+        
+        guard let url = URL(string: "http://144.24.177.214:5000/clubs/\(teamId)/last") else {
+            print("❌ Invalid URL for last games endpoint")
+            return
+        }
+        
+        do {
+            print("🌐 Fetching last games from network...")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            print("✅ Last games data received: \(data.count) bytes")
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📄 Received JSON: \(jsonString)")
+            }
+            
+            let games = try JSONDecoder().decode([LastGame].self, from: data)
+            self.teamLastResults = games.map { $0.result }
+            print("📊 Successfully decoded last games")
+            
+        } catch {
+            print("❌ Error fetching last games: \(error)")
+        }
+    }
+
 
 
 struct TeamStats {
@@ -135,4 +161,5 @@ struct TeamStats {
     var goalsFor: Int = 0
     var goalsAgainst: Int = 0
     var cleanSheets: Int = 0
+}
 }

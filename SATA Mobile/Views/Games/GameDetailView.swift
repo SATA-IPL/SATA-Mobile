@@ -139,6 +139,10 @@ struct GameDetailView: View {
             //await viewModel.fetchEvents(gameId: gameId)
             await viewModel.fetchHomeStatistics(gameId: gameId)
             await viewModel.fetchAwayStatistics(gameId: gameId)
+            if let homeTeamId = Int(game.homeTeam.id),
+                let awayTeamId = Int(game.awayTeam.id) {
+                await viewModel.fetchHeadToHead(team1Id: homeTeamId, team2Id: awayTeamId)
+             }   
             isStatsLoaded = true
             isEventsLoaded = true
             if let game = viewModel.game {
@@ -246,7 +250,7 @@ struct GameDetailView: View {
                 }
             }
             
-            headToHeadCard(game)
+            headToHeadCard(game,viewModel)
             formGuideCard(game)
         }
     }
@@ -1193,22 +1197,22 @@ struct FormIndicator: View {
 
 
 // Modify headToHeadCard to include game parameter
-private func headToHeadCard(_ game: Game) -> some View {
+private func headToHeadCard(_ game: Game , _ viewModel: GameDetailViewModel) -> some View {
     InfoCard(title: "Head to Head", icon: "arrow.left.and.right") {
         VStack(spacing: CardStyle.spacing) {
             HStack(spacing: 0) {
                 VStack(spacing: 4) {
-                    Text("15")
+                    Text("\(viewModel.team1Wins)")
                         .font(.system(.title2, weight: .bold))
                         .foregroundStyle(.green)
-                    Text("AVS Futebol")
+                    Text(game.homeTeam.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 
                 VStack(spacing: 4) {
-                    Text("7")
+                    Text("\(viewModel.draws)")
                         .font(.system(.title2, weight: .bold))
                     Text("Draws")
                         .font(.caption)
@@ -1217,10 +1221,10 @@ private func headToHeadCard(_ game: Game) -> some View {
                 .frame(maxWidth: .infinity)
                 
                 VStack(spacing: 4) {
-                    Text("12")
+                    Text("\(viewModel.team2Wins)")
                         .font(.system(.title2, weight: .bold))
                         .foregroundStyle(.red)
-                    Text("Estoril Praia")
+                    Text(game.awayTeam.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1229,9 +1233,15 @@ private func headToHeadCard(_ game: Game) -> some View {
             
             Divider()
             
-            Text("Last Meeting: 2-1")
-                .font(.system(.footnote))
-                .foregroundStyle(.secondary)
+            if viewModel.team1Score == -1 {
+                Text("No previous meetings")
+                    .font(.system(.footnote))
+                    .foregroundStyle(.secondary)
+                } else {
+                    Text("Last Meeting: \(viewModel.team1Score)-\(viewModel.team2Score)")
+                        .font(.system(.footnote))
+                        .foregroundStyle(.secondary)
+                }
         }
     }
 

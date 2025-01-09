@@ -17,6 +17,11 @@ class GameDetailViewModel: ObservableObject {
     }
     @Published var homeStatistics: [Statistics] = []
     @Published var awayStatistics: [Statistics] = []
+    @Published var draws: Int = 0
+    @Published var team1Wins: Int = 0
+    @Published var team2Wins: Int = 0
+    @Published var team1Score: Int = 0
+    @Published var team2Score: Int = 0
     private var eventSource: EventSource?
     private var listeningTask: Task<Void, Never>?
     
@@ -35,6 +40,7 @@ class GameDetailViewModel: ObservableObject {
             generationConfig: GameDetailViewModel.config
         )
     }()
+
     
     func fetchGameDetail(id: Int) async {
         print("📱 Starting to fetch game details for ID: \(id)")
@@ -235,4 +241,49 @@ class GameDetailViewModel: ObservableObject {
         listeningTask = nil
         print("Stopped listening to game details.")
     }
+        
+    func fetchHeadToHead(team1Id: Int, team2Id: Int ) async {
+            print("📱 Starting to fetch head to head stats for teams: \(team1Id) vs \(team2Id)")
+            
+            guard let url = URL(string: "http://144.24.177.214:5000/clubs/\(team1Id)/vs/\(team2Id)") else {
+                print("❌ Invalid URL for head to head endpoint")
+                return
+            }
+            
+            do {
+                print("🌐 Fetching head to head stats from network...")
+                let (data, _) = try await URLSession.shared.data(from: url)
+                print("✅ Head to head data received: \(data.count) bytes")
+                
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📄 Received JSON: \(jsonString)")
+                }
+                
+                let stats = try JSONDecoder().decode(HeadToHeadStats.self, from: data)
+                await MainActor.run {
+                    self.draws = stats.draws
+                    self.team1Wins = stats.team1_wins
+                    self.team2Wins = stats.team2_wins
+                    
+                    if let lastGame = stats.games.first {
+                        if lastGame.home_team == stats.team1_id {
+                            self.team1Score = lastGame.home_score
+                            self.team2Score = lastGame.away_score
+                        }
+                        
+                        else {
+                            self.team1Score = lastGame.away_score
+                            self.team2Score = lastGame.home_score
+                        }
+                    } else {
+                        self.team1Score = -1
+                        self.team2Score = -1
+                    }
+                }
+                print("📊 Successfully decoded head to head stats")
+            } catch {
+                print("❌ Error fetching head to head stats: \(error)")
+            }
+        }
 }
+

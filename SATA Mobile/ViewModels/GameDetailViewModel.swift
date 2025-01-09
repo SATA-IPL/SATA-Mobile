@@ -22,6 +22,8 @@ class GameDetailViewModel: ObservableObject {
     @Published var team2Wins: Int = 0
     @Published var team1Score: Int = 0
     @Published var team2Score: Int = 0
+    @Published var homeLastResults: [String] = []
+    @Published var awayLastResults: [String] = []
     private var eventSource: EventSource?
     private var listeningTask: Task<Void, Never>?
     
@@ -167,7 +169,7 @@ class GameDetailViewModel: ObservableObject {
                 case .open:
                     print("Connection was opened.")
                 case .error(let error):
-                    print("Received an error:", error.localizedDescription)
+                        print("Received an error:", error.localizedDescription)
                 case .event(let event):
                     let eventData = event.data ?? ""
                     
@@ -285,5 +287,37 @@ class GameDetailViewModel: ObservableObject {
                 print("❌ Error fetching head to head stats: \(error)")
             }
         }
+        
+    func fetchFormGuide(teamId: Int, isHome: Bool) async {
+        print("📱 Starting to fetch last games for team: \(teamId)")
+        
+        guard let url = URL(string: "http://144.24.177.214:5000/clubs/\(teamId)/last") else {
+            print("❌ Invalid URL for last games endpoint")
+            return
+        }
+        
+        do {
+            print("🌐 Fetching last games from network...")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            print("✅ Last games data received: \(data.count) bytes")
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📄 Received JSON: \(jsonString)")
+            }
+            
+            let games = try JSONDecoder().decode([LastGame].self, from: data)
+            await MainActor.run {
+                if isHome {
+                    self.homeLastResults = games.map { $0.result }
+                } else {
+                    self.awayLastResults = games.map { $0.result }
+            }
+            }
+            print("📊 Successfully decoded last games")
+            
+        } catch {
+            print("❌ Error fetching last games: \(error)")
+        }
+    }
 }
 

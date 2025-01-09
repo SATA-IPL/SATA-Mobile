@@ -143,6 +143,8 @@ struct GameDetailView: View {
                 let awayTeamId = Int(game.awayTeam.id) {
                 await viewModel.fetchHeadToHead(team1Id: homeTeamId, team2Id: awayTeamId)
              }   
+             await viewModel.fetchFormGuide(teamId: Int(game.homeTeam.id) ?? 0, isHome: true)
+            await viewModel.fetchFormGuide(teamId: Int(game.awayTeam.id) ?? 0, isHome: false)
             isStatsLoaded = true
             isEventsLoaded = true
             if let game = viewModel.game {
@@ -251,7 +253,7 @@ struct GameDetailView: View {
             }
             
             headToHeadCard(game,viewModel)
-            formGuideCard(game)
+            formGuideCard(game,viewModel)
         }
     }
     
@@ -1133,12 +1135,14 @@ struct FormIndicator: View {
         switch result {
         case "W": return .green.opacity(0.8)
         case "L": return .red.opacity(0.8)
-        default: return .orange.opacity(0.8)
+        case "D": return .orange.opacity(0.8)
+        case "empty": return .gray.opacity(0.2) // Placeholder color
+        default: return .gray.opacity(0.8)
         }
     }
     
     var body: some View {
-        Text(result)
+        Text(result == "empty" ? "" : result)
             .font(.system(.caption2, weight: .black))
             .foregroundColor(.white)
             .frame(width: 20, height: 20)
@@ -1248,7 +1252,7 @@ private func headToHeadCard(_ game: Game , _ viewModel: GameDetailViewModel) -> 
 }
 
 // Modify formGuideCard to include game parameter
-private func formGuideCard(_ game: Game) -> some View {
+private func formGuideCard(_ game: Game, _ viewModel: GameDetailViewModel) -> some View {
     InfoCard(title: "Form Guide", icon: "chart.line.uptrend.xyaxis") {
         VStack(spacing: CardStyle.spacing) {
             HStack {
@@ -1256,8 +1260,8 @@ private func formGuideCard(_ game: Game) -> some View {
                     Text(game.homeTeam.name)
                         .font(.system(.footnote, weight: .medium))
                     HStack(spacing: 4) {
-                        ForEach(["W", "L", "W", "W", "D"], id: \.self) { result in
-                            FormIndicator(result: result)
+                        ForEach(padResults(viewModel.homeLastResults), id: \.self) { result in
+                            FormIndicator(result: convertResult(result))
                         }
                     }
                 }
@@ -1268,12 +1272,27 @@ private func formGuideCard(_ game: Game) -> some View {
                     Text(game.awayTeam.name)
                         .font(.system(.footnote, weight: .medium))
                     HStack(spacing: 4) {
-                        ForEach(["L", "W", "D", "W", "W"], id: \.self) { result in
-                            FormIndicator(result: result)
+                        ForEach(padResults(viewModel.awayLastResults), id: \.self) { result in
+                            FormIndicator(result: convertResult(result))
                         }
                     }
                 }
             }
         }
     }
+}
+private func convertResult(_ result: String) -> String {
+    print("🔄 Converting result: \(result)")
+    let converted = switch result.lowercased() {
+        case "win": "W"
+        case "draw": "D"
+        case "loss": "L"
+        default: "-"
+    }
+    print("✅ Converted to: \(converted)")
+    return converted
+}
+private func padResults(_ results: [String], count: Int = 5) -> [String] {
+    let padding = Array(repeating: "empty", count: max(0, count - results.count))
+    return Array(results.prefix(count)) + padding
 }

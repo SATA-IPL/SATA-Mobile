@@ -197,6 +197,9 @@ struct GameDetailView: View {
                         .onAppear {
                             print("📊 Events in viewModel: \(viewModel.events)")
                         }
+                }
+            }
+        }
     }
     
     private var analysisSection: some View {
@@ -1144,6 +1147,9 @@ struct FormIndicator: View {
     @State var localEvents: [Event] = viewModel.events
     
     return InfoCard(title: "Key Events", icon: "clock.fill") {
+        ScrollView {
+            HStack(alignment: .top, spacing: 30) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("Match Timeline")
                         .font(.title2.bold())
                     
@@ -1181,6 +1187,16 @@ struct FormIndicator: View {
     .onChange(of: viewModel.events) { newEvents in
         print("📊 Events updated: \(newEvents.count) events")
         localEvents = newEvents
+    }
+}
+
+
+// Modify headToHeadCard to include game parameter
+private func headToHeadCard(_ game: Game) -> some View {
+    InfoCard(title: "Head to Head", icon: "arrow.left.and.right") {
+        VStack(spacing: CardStyle.spacing) {
+            HStack(spacing: 0) {
+                VStack(spacing: 4) {
                     Text("15")
                         .font(.system(.title2, weight: .bold))
                         .foregroundStyle(.green)

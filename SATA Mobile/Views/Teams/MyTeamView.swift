@@ -3,10 +3,7 @@ import SwiftUI
 struct MyTeamView: View {
     @StateObject private var viewModel = TeamDetailViewModel() // Add dedicated view model
     @EnvironmentObject private var teamsViewModel: TeamsViewModel
-    @EnvironmentObject private var stadiumsViewModel: StadiumsViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var showStadium = false
-    @State private var selectedStadium: Stadium?
     let team: Team
     
     enum TeamSection: String, CaseIterable {
@@ -52,12 +49,6 @@ struct MyTeamView: View {
                 // Use dedicated view model instead of shared TeamsViewModel
                 await viewModel.fetchTeamDetails(teamId: team.id)
                 await viewModel.fetchTeamPlayers(team_Id: team.id)
-                if let stadium = await stadiumsViewModel.fetchStadium(teamId: team.id) {
-                    selectedStadium = stadium
-                }
-            }
-            .sheet(item: $selectedStadium) { stadium in
-                StadiumView(viewModel: stadiumsViewModel, stadium: stadium)
             }
         }
     }
@@ -113,7 +104,7 @@ struct MyTeamView: View {
             }
             
             // Upcoming Games Card
-            InfoCard(title: "Upcoming Games", icon: "calendar") {
+            InfoCard(title: "Upcoming Game", icon: "calendar") {
                 if viewModel.upcomingGames.isEmpty {
                     Text("No upcoming games")
                         .foregroundStyle(.secondary)

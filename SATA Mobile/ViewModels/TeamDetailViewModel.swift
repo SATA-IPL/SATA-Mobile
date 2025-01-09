@@ -13,15 +13,55 @@ class TeamDetailViewModel: ObservableObject {
     @Published var teamLastResults: [String] = [] 
     
     func fetchTeamDetails(teamId: String) async {
-        // Simulate fetching team stats
-        teamStats = TeamStats(
-            matches: 38,
-            wins: 25,
-            losses: 8,
-            goalsFor: 80,
-            goalsAgainst: 35,
-            cleanSheets: 15
-        )
+        print("📱 Starting to fetch season stats for team ID: \(teamId)")
+        state = .loading
+    
+    guard let url = URL(string: "http://144.24.177.214:5000/seasons/\(teamId)") else {
+        print("❌ Invalid URL for season stats endpoint")
+        state = .error("Invalid URL")
+        return
+    }
+    
+    do {
+        print("🌐 Fetching season stats from network...")
+        let (data, _) = try await URLSession.shared.data(from: url)
+        print("✅ Season stats data received: \(data.count) bytes")
+        
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📄 Received JSON: \(jsonString)")
+        }
+        
+        do {
+            let stats = try JSONDecoder().decode(SeasonStats.self, from: data)
+            print("📊 Successfully decoded season stats")
+            teamStats = TeamStats(
+                matches: stats.matches,
+                wins: stats.wins,
+                losses: stats.losses,
+                goalsFor: stats.goals_for,
+                goalsAgainst: stats.goals_against,
+                cleanSheets: stats.clean_sheets
+            )
+            state = .loaded
+        } catch let decodingError as DecodingError {
+            switch decodingError {
+            case .typeMismatch(let type, let context):
+                print("❌ Type mismatch: expected \(type) at path: \(context.codingPath)")
+            case .valueNotFound(let type, let context):
+                print("❌ Value missing: expected \(type) at path: \(context.codingPath)")
+            case .keyNotFound(let key, let context):
+                print("❌ Key missing: \(key) at path: \(context.codingPath)")
+            case .dataCorrupted(let context):
+                print("❌ Data corrupted: \(context.debugDescription)")
+            @unknown default:
+                print("❌ Unknown decoding error: \(decodingError)")
+            }
+            state = .error("JSON Decoding Error: \(decodingError.localizedDescription)")
+        }
+    } catch {
+        print("❌ Network error: \(error.localizedDescription)")
+        state = .error(error.localizedDescription)
+    }
         
         // Load upcoming games
         await fetchUpcomingGames(teamId: Int(teamId) ?? 0)

@@ -6,23 +6,10 @@ class TeamDetailViewModel: ObservableObject {
     @Published var teamStats = TeamStats()
     @Published var state: ViewState = .loading
     @Published var recentForm: [String] = []
-    @Published var nextMatch: NextMatch?
+    @Published var nextMatch: Game?
     @Published var squad: [Player] = []
-    @Published var matches: [Match] = []
-    @Published var upcomingGames: [UpcomingGame] = []
-
-    struct UpcomingGame: Identifiable, Codable {
-        let id = UUID()
-        let away_team: Team
-        let home_team: Team
-        let date: String
-        let hour: String
-        
-        struct Team: Codable {
-            let name: String
-            let id: Int
-        }
-    }
+    @Published var games: [Game] = []
+    @Published var upcomingGames: [Game] = []
     
     func fetchTeamDetails(teamId: String) async {
         // Simulate fetching team stats
@@ -58,7 +45,7 @@ class TeamDetailViewModel: ObservableObject {
             }
             
             do {
-                let games = try JSONDecoder().decode([UpcomingGame].self, from: data)
+                let games = try JSONDecoder().decode([Game].self, from: data)
                 upcomingGames = games
                 
             } catch {
@@ -72,7 +59,7 @@ class TeamDetailViewModel: ObservableObject {
         }
     }
 
-    func getFormattedGameDate(_ game: UpcomingGame) -> String {
+    func getFormattedGameDate(_ game: Game) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         guard let date = dateFormatter.date(from: game.date) else { return game.date }
@@ -148,19 +135,4 @@ struct TeamStats {
     var goalsFor: Int = 0
     var goalsAgainst: Int = 0
     var cleanSheets: Int = 0
-}
-
-struct NextMatch {
-    let opponent: String
-    let date: String
-    let competition: String
-}
-
-struct Match: Identifiable {
-    let id = UUID()
-    let opponent: String
-    let date: String
-    let score: String
-    let result: String
-    let competition: String
 }

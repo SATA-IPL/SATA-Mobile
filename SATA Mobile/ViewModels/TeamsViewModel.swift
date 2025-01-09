@@ -10,9 +10,9 @@ class TeamsViewModel: ObservableObject {
     // Added team details properties
     @Published var teamStats = TeamStats()
     @Published var recentForm: [String] = []
-    @Published var nextMatch: NextMatch?
+    @Published var nextMatch: Game?
     @Published var squad: [Player] = []
-    @Published var matches: [Match] = []
+    @Published var matches: [Game] = []
     @Published var games: [Game] = []
     
     private var fetchTask: Task<Void, Never>?
@@ -147,9 +147,6 @@ class TeamsViewModel: ObservableObject {
             // Fetch squad first
             await fetchTeamPlayers(team_Id: teamId)
             
-            // Then fetch matches
-            await fetchTeamMatches(teamId: teamId)
-            
             // Set other team details
             teamStats = TeamStats(
                 matches: 38,
@@ -161,12 +158,6 @@ class TeamsViewModel: ObservableObject {
             )
             
             recentForm = ["W", "W", "D", "L", "W"]
-            
-            nextMatch = NextMatch(
-                opponent: "Sporting CP",
-                date: "2024-03-15",
-                competition: "League Cup"
-            )
             
             state = .loaded
         } catch {
@@ -204,15 +195,5 @@ class TeamsViewModel: ObservableObject {
     
     deinit {
         fetchTask?.cancel()
-    }
-    
-    func fetchTeamMatches(teamId: String) async {
-        // Simulate fetching match data
-        matches = [
-            Match(opponent: "FC Porto", date: "2024-03-10", score: "2-1", result: "W", competition: "Liga Portugal"),
-            Match(opponent: "Benfica", date: "2024-03-03", score: "0-0", result: "D", competition: "Liga Portugal"),
-            Match(opponent: "Sporting CP", date: "2024-02-25", score: "1-2", result: "L", competition: "Taça de Portugal"),
-            // Add more matches as needed
-        ]
     }
 }

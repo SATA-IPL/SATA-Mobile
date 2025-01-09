@@ -24,6 +24,7 @@ class GameDetailViewModel: ObservableObject {
     @Published var team2Score: Int = 0
     @Published var homeLastResults: [String] = []
     @Published var awayLastResults: [String] = []
+    @Published var predictedWinner: String?
     private var eventSource: EventSource?
     private var listeningTask: Task<Void, Never>?
     
@@ -268,7 +269,7 @@ class GameDetailViewModel: ObservableObject {
                     self.team2Wins = stats.team2_wins
                     
                     if let lastGame = stats.games.first {
-                        if lastGame.home_team == stats.team1_id {
+                        if (lastGame.home_team == stats.team1_id) {
                             self.team1Score = lastGame.home_score
                             self.team2Score = lastGame.away_score
                         }
@@ -318,6 +319,111 @@ class GameDetailViewModel: ObservableObject {
         } catch {
             print("❌ Error fetching last games: \(error)")
         }
+    }
+
+    func predictWinner(gameId: Int) async {
+        guard let url = URL(string: "http://144.24.177.214:5000/games/predict") else {
+            print("❌ Invalid URL for prediction endpoint")
+            return
+        }
+        
+        do {
+            print("🎲 Fetching game prediction...")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            // Print received JSON for debugging
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📄 Received prediction JSON: \(jsonString)")
+            }
+            
+            struct Prediction: Codable {
+                let likely_winner: Int
+            }
+            
+            let prediction = try JSONDecoder().decode(Prediction.self, from: data)
+            print("🎯 Decoded prediction winner: \(prediction.likely_winner)")
+            await MainActor.run {
+                self.predictedWinner = String(prediction.likely_winner)
+                print("✅ Set predicted winner to: \(prediction.likely_winner)")
+            }
+        } catch {
+            print("❌ Error fetching prediction: \(error.localizedDescription)")
+        }
+    }
+
+    func generateContext() -> String {
+        guard let game = self.game else {
+            return "No game information available."
+        }
+        
+        var context = """
+            Game Info:
+            - Match: \(game.homeTeam.name) vs \(game.awayTeam.name)
+            - Score: \(game.homeScore)-\(game.awayScore)
+            - Date: \(game.date)
+            - Time: \(game.hour)
+            - Status: \(game.state)
+            """
+        
+        if let venue = game.venue {
+            context += "\n- Venue: \(venue)"
+        }
+
+        // Add team information
+        if let homePlayers = game.homeTeam.players {
+            context += "\n\nHome Team Players (\(game.homeTeam.name)):"
+            for player in homePlayers {
+                context += "\n- \(player.name) (#\(player.shirtNumber), \(player.position))"
+            }
+        }
+        
+        if let awayPlayers = game.awayTeam.players {
+            context += "\n\nAway Team Players (\(game.awayTeam.name)):"
+            for player in awayPlayers {
+                context += "\n- \(player.name) (#\(player.shirtNumber), \(player.position))"
+            }
+        }
+        
+        // Add statistics if available
+        if !homeStatistics.isEmpty && !awayStatistics.isEmpty {
+            context += "\n\nMatch Statistics:"
+            if let homeStats = homeStatistics.first, let awayStats = awayStatistics.first {
+                context += """
+                
+                - Shots: \(homeStats.finish) vs \(awayStats.finish)
+                - Passes: \(homeStats.passes) vs \(awayStats.passes)
+                - Tackles: \(homeStats.tackle) vs \(awayStats.tackle)
+                - Saves: \(homeStats.defense) vs \(awayStats.defense)
+                - Fouls: \(homeStats.foul) vs \(awayStats.foul)
+                - Yellow Cards: \(homeStats.yellowCard) vs \(awayStats.yellowCard)
+                - Red Cards: \(homeStats.redCard) vs \(awayStats.redCard)
+                """
+            }
+        }
+        
+        // Add game events
+        if !events.isEmpty {
+            context += "\n\nGame Events:"
+            for event in events.sorted(by: { $0.minute < $1.minute }) {
+                let teamName = event.team_id == Int(game.homeTeam.id) ? game.homeTeam.name : game.awayTeam.name
+                let playerInfo = event.player_id.map { id -> String in
+                    if let player = (game.homeTeam.players?.first { $0.id == id } ?? game.awayTeam.players?.first { $0.id == id }) {
+                        return player.name
+                    }
+                    return "Unknown Player"
+                } ?? "Unknown Player"
+                
+                context += "\n- Minute \(event.minute): \(event.event_type) by \(playerInfo) (\(teamName))"
+            }
+        }
+        
+        // Add predicted winner if available
+        if let predictedWinner = predictedWinner {
+            let winningTeam = (predictedWinner == game.homeTeam.id) ? game.homeTeam.name : game.awayTeam.name
+            context += "\n\nPredicted Winner: \(winningTeam)"
+        }
+        
+        return context
     }
 }
 

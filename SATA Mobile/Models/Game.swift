@@ -14,8 +14,7 @@ struct Game: Identifiable, Decodable {
   let stadium: Stadium?
   let videoUrl: String?
   let leagueId: Int?
-  
-    
+  let timestamp: String?
   
   var id: Int { gameId }
   
@@ -39,6 +38,7 @@ struct Game: Identifiable, Decodable {
     case videoUrl = "video_url"
     case leagueId = "league_id"
     case teamGameStats
+    case timestamp
   }
   
   init(from decoder: Decoder) throws {
@@ -56,13 +56,14 @@ struct Game: Identifiable, Decodable {
     stadium = try container.decodeIfPresent(Stadium.self, forKey: .stadium)
     videoUrl = try container.decodeIfPresent(String.self, forKey: .videoUrl)
     leagueId = try container.decodeIfPresent(Int.self, forKey: .leagueId)
+    timestamp = try container.decodeIfPresent(String.self, forKey: .timestamp)
   }
   
   static func == (lhs: Game, rhs: Game) -> Bool {
     lhs.id == rhs.id
   }
 
-  func generateContext() -> String {
+  func generateContext(events: [Event] = []) -> String {
     var context = """
         Game Info:
         - Match: \(homeTeam.name) vs \(awayTeam.name)
@@ -75,9 +76,36 @@ struct Game: Identifiable, Decodable {
     if let venue = venue {
         context += "\n- Venue: \(venue)"
     }
+
+    // Add team information
+    if let homePlayers = homeTeam.players {
+        context += "\n\nHome Team Players (\(homeTeam.name)):"
+        for player in homePlayers {
+            context += "\n- \(player.name) (#\(player.shirtNumber), \(player.position))"
+        }
+    }
     
-    if let stadium = stadium {
-        context += "\n- Stadium: \(stadium.stadiumName)"
+    if let awayPlayers = awayTeam.players {
+        context += "\n\nAway Team Players (\(awayTeam.name)):"
+        for player in awayPlayers {
+            context += "\n- \(player.name) (#\(player.shirtNumber), \(player.position))"
+        }
+    }
+    
+    // Add game events
+    if !events.isEmpty {
+        context += "\n\nGame Events:"
+        for event in events.sorted(by: { $0.minute < $1.minute }) {
+            let teamName = event.team_id == Int(homeTeam.id) ? homeTeam.name : awayTeam.name
+            let playerInfo = event.player_id.map { id -> String in
+                if let player = (homeTeam.players?.first { $0.id == id } ?? awayTeam.players?.first { $0.id == id }) {
+                    return player.name
+                }
+                return "Unknown Player"
+            } ?? "Unknown Player"
+            
+            context += "\n- Minute \(event.minute): \(event.event_type) by \(playerInfo) (\(teamName))"
+        }
     }
     
     return context

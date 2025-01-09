@@ -14,7 +14,9 @@ struct MyTeamView: View {
     @State private var selectedSection: TeamSection = .overview
     @State private var selectedPlayer: Player?
     @State private var hasLoadedSquad = false
-
+    //Animation
+    @Namespace private var animation
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -105,40 +107,19 @@ struct MyTeamView: View {
             
             // Upcoming Games Card
             InfoCard(title: "Upcoming Game", icon: "calendar") {
-                if viewModel.upcomingGames.isEmpty {
+                if let nextGame = viewModel.upcomingGames.last {
+                    NavigationLink {
+                        GameDetailView(game: nextGame, gameId: nextGame.id, animation: animation)
+                    } label: {
+                        UpcomingGameCard(game: nextGame, teamID: team.id)
+                    }
+                } else {
                     Text("No upcoming games")
                         .foregroundStyle(.secondary)
-                } else {
-                    VStack(spacing: 12) {
-                        ForEach(viewModel.upcomingGames) { game in
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(viewModel.getFormattedGameDate(game))
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                    HStack {
-                                        Text(game.home_team.name)
-                                            .fontWeight(team.id == String(game.home_team.id) ? .bold : .regular)
-                                        Text("vs")
-                                            .foregroundStyle(.secondary)
-                                        Text(game.away_team.name)
-                                            .fontWeight(team.id == String(game.away_team.id) ? .bold : .regular)
-                                    }
-                                }
-                                Spacer()
-                                Text(game.hour)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if game.id != viewModel.upcomingGames.last?.id {
-                                Divider()
-                            }
-                        }
-                    }
                 }
             }
         }
-        .padding()
+        .padding(.top)
     }
     
     private var squadSection: some View {
@@ -151,7 +132,7 @@ struct MyTeamView: View {
                     GridItem(.adaptive(minimum: 160, maximum: 180), spacing: 16)
                 ], spacing: 16) {
                     ForEach(viewModel.squad) { player in
-                        EnhancedPlayerCard(
+                        PlayerCard(
                             player: player,
                             teamColor: Color(hex: team.colors?[0] ?? "#000000")
                         )
@@ -170,8 +151,8 @@ struct MyTeamView: View {
             .presentationDetents([.medium])
         }
     }
-
-    struct EnhancedPlayerCard: View {
+    
+    struct PlayerCard: View {
         let player: Player
         let teamColor: Color
         
@@ -235,7 +216,7 @@ struct MyTeamView: View {
             }
         }
     }
-
+    
     struct StatItem: View {
         let value: String
         let label: String
@@ -252,7 +233,7 @@ struct MyTeamView: View {
     
     private var matchesSection: some View {
         VStack(spacing: 16) {
-            if viewModel.matches.isEmpty {
+            if viewModel.upcomingGames.isEmpty {
                 ContentUnavailableView {
                     Label("No Matches", systemImage: "sportscourt")
                 } description: {
@@ -260,62 +241,13 @@ struct MyTeamView: View {
                 }
             } else {
                 LazyVStack(spacing: 12) {
-                    ForEach(viewModel.matches) { match in
-                        MatchRow(match: match)
+                    ForEach(viewModel.upcomingGames) { game in
+                        UpcomingGameCard(game: game, teamID: team.id)
                     }
                 }
             }
         }
         .padding()
-    }
-
-    struct MatchRow: View {
-        let match: Match
-        
-        var body: some View {
-            HStack {
-                // Result indicator
-                Circle()
-                    .fill(resultColor)
-                    .frame(width: 8, height: 8)
-                
-                // Date
-                Text(match.date)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 80, alignment: .leading)
-                
-                // Match details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(match.opponent)
-                        .font(.headline)
-                    Text(match.competition)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-                
-                // Score
-                Text(match.score)
-                    .font(.headline)
-                    .monospacedDigit()
-            }
-            .padding()
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.background)
-                    .shadow(color: .black.opacity(0.05), radius: 3, y: 2)
-            }
-        }
-        
-        private var resultColor: Color {
-            switch match.result.lowercased() {
-            case "w": return .green
-            case "l": return .red
-            default: return .yellow
-            }
-        }
     }
     
     private func teamBackground(teamColor: String) -> some View {
@@ -340,5 +272,32 @@ struct MyTeamView: View {
             )
         }
         .ignoresSafeArea()
+    }
+}
+
+struct UpcomingGameCard: View {
+    let game: Game
+    let teamID: String
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(game.date)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Text(game.homeTeam.name)
+                        .fontWeight(teamID == String(game.homeTeam.id) ? .bold : .regular)
+                    Text("vs")
+                        .foregroundStyle(.secondary)
+                    Text(game.awayTeam.name)
+                        .fontWeight(teamID == String(game.awayTeam.id) ? .bold : .regular)
+                }
+            }
+            Spacer()
+            Text(game.hour)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }

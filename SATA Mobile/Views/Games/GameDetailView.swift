@@ -12,8 +12,8 @@ struct GameDetailView: View {
     @State private var showStadium = false
     @State private var showVideoPlayer = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var isStatsLoaded = false
-    @State private var isEventsLoaded = false
+    @State private var isStatsLoaded = true
+    @State private var isEventsLoaded = true
     
     @State var userPrompt = ""
     @State private var isTextExpanded = false
@@ -22,31 +22,38 @@ struct GameDetailView: View {
     @State private var isListening = false
     @State private var animationScale: CGFloat = 1.0
     @State private var activity: Activity<GameActivityAttributes>?
+    @State private var isLoading = true // Add this property
+    @State private var timer: Timer?
     
     
     private func startLiveActivity() {
         Task {
-            
-            let attributes = GameActivityAttributes(
-                homeTeam: game.homeTeam.name,
-                awayTeam: game.awayTeam.name,
-                homeTeamColor: game.homeTeam.colors?[0] ?? "#FFFFFF",
-                awayTeamColor: game.awayTeam.colors?[0] ?? "#00C0FF"
-            )
-            
-            let contentState = GameActivityAttributes.ContentState(
-                homeScore: game.homeScore,
-                awayScore: game.awayScore,
-                gameStatus: game.state,
-                gameTime: "90",
-                lastEvent: "Goal"
-            )
-            
-            activity = try? Activity<GameActivityAttributes>.request(
-                attributes: attributes,
-                contentState: contentState,
-                pushType: nil
-            )
+            if let detailedGame = viewModel.game {
+                let gameTime = calculateGameTime(from: detailedGame.timestamp)
+                let attributes = GameActivityAttributes(
+                    homeTeam: game.homeTeam.name,
+                    awayTeam: game.awayTeam.name,
+                    homeTeamColor: game.homeTeam.colors?[0] ?? "#FFFFFF",
+                    awayTeamColor: game.awayTeam.colors?[0] ?? "#00C0FF"
+                )
+                
+                let contentState = GameActivityAttributes.ContentState(
+                    homeScore: detailedGame.homeScore,
+                    awayScore: detailedGame.awayScore,
+                    gameStatus: game.state,
+                    gameTime: gameTime,
+                    lastEvent: viewModel.events.first.map { event ->  String in
+                        let playerName = getPlayerName(id: event.player_id, in: detailedGame)
+                        return "\(event.event_type): \(playerName)"
+                    } ?? "No events"
+                )
+                
+                activity = try? Activity<GameActivityAttributes>.request(
+                    attributes: attributes,
+                    contentState: contentState,
+                    pushType: nil
+                )
+            }
         }
     }
     
@@ -56,75 +63,199 @@ struct GameDetailView: View {
         }
     }
 
+    private func updateLiveActivityScore(homeScore: Int, awayScore: Int) {
+        Task {
+            let gameTime = calculateGameTime(from: game.timestamp)
+            let contentState = GameActivityAttributes.ContentState(
+                homeScore: homeScore,
+                awayScore: awayScore,
+                gameStatus: game.state,
+                gameTime: gameTime,
+                lastEvent: "Score Update"
+            )
+            
+            await activity?.update(using: contentState)
+        }
+    }
+
+    private func calculateGameTime(from timestamp: String?) -> String {
+        print("📅 Calculating game time from timestamp: \(timestamp ?? "nil")")
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSSSS"
+        
+        guard let timestamp = timestamp,
+              let date = formatter.date(from: timestamp) else {
+            print("⚠️ Invalid timestamp or failed to parse date")
+            return "0'"
+        }
+        
+        let elapsed = Int(-date.timeIntervalSinceNow / 60)  // Convert seconds to minutes
+        let finalTime = "\(elapsed)'"  // Removed extra parenthesis
+        print("⏱️ Calculated game time: \(finalTime)")
+        return finalTime
+    }
+
+    private func updateLiveActivityWithEvent(_ event: Event) {
+        Task {
+            if let detailedGame = viewModel.game {
+                let playerName = getPlayerName(id: event.player_id, in: detailedGame)
+                let gameTime = calculateGameTime(from: detailedGame.timestamp)
+                
+                let contentState = GameActivityAttributes.ContentState(
+                    homeScore: viewModel.game?.homeScore ?? 0,
+                    awayScore: viewModel.game?.awayScore ?? 0,
+                    gameStatus: game.state,
+                    gameTime: gameTime,
+                    lastEvent: "\(event.event_type): \(playerName)"
+                )
+                
+                await activity?.update(using: contentState)
+            }
+        }
+    }
+
+    // Add this helper function
+    private func getPlayerName(id: String?, in game: Game) -> String {
+        guard let playerId = id else { return "Unknown" }
+        
+        // Check home team players
+        if let homePlayers = game.homeTeam.players,
+           let player = homePlayers.first(where: { $0.id == playerId }) {
+            return player.name
+        }
+        
+        // Check away team players
+        if let awayPlayers = game.awayTeam.players,
+           let player = awayPlayers.first(where: { $0.id == playerId }) {
+            return player.name
+        }
+        
+        return "Unknown"
+    }
+
+    private func startGameTimeUpdates() {
+        timer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
+            if let detailedGame = viewModel.game {
+                updateLiveActivityTime(game: detailedGame)
+            }
+        }
+    }
+    
+    private func stopGameTimeUpdates() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func updateLiveActivityTime(game: Game) {
+        Task {
+            let gameTime = calculateGameTime(from: game.timestamp)
+            let lastEventText = viewModel.events.max(by: { $0.id < $1.id }).map { event -> String in
+                let playerName = getPlayerName(id: event.player_id, in: game)
+                return "\(event.event_type): \(playerName)"
+            } ?? "No events"
+            
+            let contentState = GameActivityAttributes.ContentState(
+                homeScore: game.homeScore,
+                awayScore: game.awayScore,
+                gameStatus: game.state,
+                gameTime: gameTime,
+                lastEvent: lastEventText
+            )
+            await activity?.update(using: contentState)
+        }
+    }
+
     enum GameSection: String, CaseIterable {
         case overview = "Overview"
         case analysis = "Analysis"
         case lineups = "Lineups"
     }
+    
     @State private var selectedSection: GameSection = .overview
     
     var body: some View {
         NavigationStack {
-            ScrollView{
-                VStack(spacing: 0) {
-                    // Game header with teams and score
-                    if let detailedGame = viewModel.game {
-                        HStack(spacing: 0) {
-                            TeamView(team: detailedGame.homeTeam, score: detailedGame.homeScore)
-                            Image(systemName: "star.fill")
-                                .opacity(detailedGame.homeScore > detailedGame.awayScore ? 1 : 0)
-                                .frame(maxWidth: .infinity)
-                            Spacer()
-                            HStack {
-                                VStack {
-                                    Text(detailedGame.hour)
-                                        .font(.system(.title2, weight: .bold).width(.compressed))
-                                    let formattedDate = detailedGame.date.components(separatedBy: "-").reversed().joined(separator: "/")
-                                    Text(formattedDate)
-                                        .font(.system(.headline, weight: .bold).width(.compressed))
-                                        .foregroundStyle(.secondary)
+            ZStack {
+                if isLoading {
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(.secondary)
+                        Text("Loading game details...")
+                            .foregroundStyle(.secondary)
+                            .padding(.top)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Add this line
+                    .background {
+                        gameBackground(
+                            homeTeamColor: game.homeTeam.colors?[0] ?? "#FFFFFF",
+                            awayTeamColor: game.awayTeam.colors?[0] ?? "#00C0FF"
+                        )
+                    }
+                } else {
+                    ScrollView{
+                        VStack(spacing: 0) {
+                            // Game header with teams and score
+                            if let detailedGame = viewModel.game {
+                                HStack(spacing: 0) {
+                                    TeamView(team: detailedGame.homeTeam, score: detailedGame.homeScore)
+                                    Image(systemName: "star.fill")
+                                        .opacity(detailedGame.homeScore > detailedGame.awayScore ? 1 : 0)
+                                        .frame(maxWidth: .infinity)
+                                    Spacer()
+                                    HStack {
+                                        VStack {
+                                            Text(detailedGame.hour)
+                                                .font(.system(.title2, weight: .bold).width(.compressed))
+                                            let formattedDate = detailedGame.date.components(separatedBy: "-").reversed().joined(separator: "/")
+                                            Text(formattedDate)
+                                                .font(.system(.headline, weight: .bold).width(.compressed))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    Image(systemName: "star.fill")
+                                        .opacity(detailedGame.awayScore > detailedGame.homeScore ? 1 : 0)
+                                        .frame(maxWidth: .infinity)
+                                    TeamView(team: detailedGame.awayTeam, score: detailedGame.awayScore)
+                                }
+                                .padding(.horizontal, 35)
+                                if(detailedGame.state == "live" || detailedGame.state == "finished"){
+                                    PillButton(
+                                        action: { showVideoPlayer.toggle() },
+                                        title: "Watch on SATA+",
+                                        icon: "play.circle.fill"
+                                    )
+                                    .padding(.top, 10)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            Image(systemName: "star.fill")
-                                .opacity(detailedGame.awayScore > detailedGame.homeScore ? 1 : 0)
-                                .frame(maxWidth: .infinity)
-                            TeamView(team: detailedGame.awayTeam, score: detailedGame.awayScore)
-                        }
-                        .padding(.horizontal, 35)
-                        if(detailedGame.state == "live" || detailedGame.state == "finished"){
-                            PillButton(
-                                action: { showVideoPlayer.toggle() },
-                                title: "Watch on SATA+",
-                                icon: "play.circle.fill"
-                            )
-                            .padding(.top, 10)
+                            
+                            
+                            // Replace old Picker with new custom control
+                            CustomSegmentedControl(selectedSection: $selectedSection, sections: GameSection.allCases)
+                                .padding(.vertical, 16)
+                            
+                            VStack(spacing: 20) {
+                                switch selectedSection {
+                                case .overview:
+                                    overviewSection
+                                case .analysis:
+                                    analysisSection
+                                case .lineups:
+                                    lineupsSection
+                                }
+                            }
                         }
                     }
-                    
-                    
-                    // Replace old Picker with new custom control
-                    CustomSegmentedControl(selectedSection: $selectedSection, sections: GameSection.allCases)
-                        .padding(.vertical, 8)
-                    
-                    VStack(spacing: 20) {
-                        switch selectedSection {
-                        case .overview:
-                            overviewSection
-                        case .analysis:
-                            analysisSection
-                        case .lineups:
-                            lineupsSection
-                        }
+                    .navigationTransition(.zoom(sourceID: game.id, in: animation))
+                    .background {
+                        gameBackground(
+                            homeTeamColor: game.homeTeam.colors?[0] ?? "#FFFFFF",
+                            awayTeamColor: game.awayTeam.colors?[0] ?? "#00C0FF"
+                        )
                     }
                 }
-            }
-            .navigationTransition(.zoom(sourceID: game.id, in: animation))
-            .background {
-                gameBackground(
-                    homeTeamColor: game.homeTeam.colors?[0] ?? "#FFFFFF",
-                    awayTeamColor: game.awayTeam.colors?[0] ?? "#00C0FF"
-                )
             }
         }
         .fullScreenCover(isPresented: $showVideoPlayer) {
@@ -134,11 +265,11 @@ struct GameDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            isLoading = true
             await viewModel.fetchGameDetail(id: gameId)
-            //await viewModel.fetchEvents()
-            //await viewModel.fetchEvents(gameId: gameId)
             await viewModel.fetchHomeStatistics(gameId: gameId)
             await viewModel.fetchAwayStatistics(gameId: gameId)
+            await viewModel.predictWinner(gameId: gameId)  // Add this line
             if let homeTeamId = Int(game.homeTeam.id),
                 let awayTeamId = Int(game.awayTeam.id) {
                 await viewModel.fetchHeadToHead(team1Id: homeTeamId, team2Id: awayTeamId)
@@ -152,17 +283,33 @@ struct GameDetailView: View {
                 print("Fetched away statistics:", viewModel.awayStatistics)
                 //print("Fetched game details:", game)
                 // Start live activity for demo purposes, regardless of game state
-                startLiveActivity()
+                if (game.state == "live") {
+                    startLiveActivity()
+                    startGameTimeUpdates()
+                }
             }
-            
+            isLoading = false
         }
         .onAppear {
             viewModel.startListeningToGameDetails(gameId: gameId)
         }
         .onDisappear {
             Task {
+                stopGameTimeUpdates()
                 stopLiveActivity()
                 viewModel.stopListeningToGameDetails()
+            }
+        }
+        .onChange(of: viewModel.game?.homeScore) { newHomeScore in
+            if let homeScore = newHomeScore,
+               let awayScore = viewModel.game?.awayScore {
+                updateLiveActivityScore(homeScore: homeScore, awayScore: awayScore)
+            }
+        }
+        .onChange(of: viewModel.game?.awayScore) { newAwayScore in
+            if let homeScore = viewModel.game?.homeScore,
+               let awayScore = newAwayScore {
+                updateLiveActivityScore(homeScore: homeScore, awayScore: awayScore)
             }
         }
         .toolbar {
@@ -199,11 +346,52 @@ struct GameDetailView: View {
                 }
             case .loaded:
                 if let detailedGame = viewModel.game {
-                    matchStatsCard(game, viewModel, isStatsLoaded: isStatsLoaded)
-                    eventsCard(game, viewModel, gameId: gameId)
+                    if(game.state == "live" || game.state == "finished")
+                    {
+                        matchStatsCard(game, viewModel, isStatsLoaded: isStatsLoaded)
+                        eventsCard(
+                            game,
+                            viewModel,
+                            gameId: gameId,
+                            updateLiveActivityScore: updateLiveActivityWithEvent
+                        )
                         .onAppear {
                             print("📊 Events in viewModel: \(viewModel.events)")
                         }
+                    }
+                    else {
+                        // Move prediction card outside of detailedGame check since it's independent
+                        if let predictedWinner = viewModel.predictedWinner {
+                            InfoCard(title: "Match Prediction", icon: "trophy.fill") {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 16) {
+                                        let winningTeam = (predictedWinner == detailedGame.homeTeam.id) ? detailedGame.homeTeam : detailedGame.awayTeam
+                                        if let imageUrl = winningTeam.image {
+                                            AsyncImage(url: URL(string: imageUrl)) { image in
+                                                image.resizable()
+                                                    .aspectRatio(contentMode: .fit)
+                                                    .frame(width: 50, height: 50)
+                                            } placeholder: {
+                                                Color.gray.opacity(0.3)
+                                            }
+                                            .frame(width: 50, height: 50)
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Predicted Winner")
+                                                .font(.subheadline)
+                                                .foregroundStyle(.secondary)
+                                            Text(winningTeam.name)
+                                                .font(.title3)
+                                                .fontWeight(.bold)
+                                        }
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -211,37 +399,20 @@ struct GameDetailView: View {
     
     private var analysisSection: some View {
         VStack(spacing: 20) {
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("Game Analysis")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Spacer()
-                    Label("AI Generated", systemImage: "sparkles")
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal)
-                
-                ZStack {
-                    if viewModel.isLoading {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(0..<3) { _ in
-                                ShimmerLoadingView()
-                                    .frame(height: 16)
-                                    .cornerRadius(8)
-                            }
+            InfoCard(title: "Game Analysis", icon: "sparkles") {
+                if viewModel.isLoading {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(0..<3) { _ in
+                            ShimmerLoadingView()
+                                .frame(height: 16)
+                                .cornerRadius(8)
                         }
-                        .padding()
-                    } else {
-                        Text(viewModel.response)
-                            .font(.body)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(.thinMaterial)
-                            .cornerRadius(10)
                     }
+                } else {
+                    Text(viewModel.response)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal)
             }
             .onAppear {
                 if viewModel.response == "How can I help you today?" {
@@ -273,39 +444,6 @@ struct GameDetailView: View {
                 }
             } else {
                 loadingAdditionalInfo
-            }
-        }
-    }
-    
-    private var loadingAdditionalInfo: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Loading Game Information")
-                .font(.title3)
-                .fontWeight(.bold)
-                .padding(.horizontal)
-            
-            ForEach(0..<2) { _ in
-                VStack(alignment: .leading, spacing: 10) {
-                    ShimmerLoadingView()
-                        .frame(width: 120, height: 20)
-                        .padding(.horizontal)
-                    
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: 15) {
-                            ForEach(0..<5) { _ in
-                                VStack {
-                                    ShimmerLoadingView()
-                                        .frame(width: 70, height: 70)
-                                        .clipShape(Circle())
-                                    ShimmerLoadingView()
-                                        .frame(width: 60, height: 12)
-                                }
-                                .frame(width: 100)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
             }
         }
     }
@@ -371,6 +509,7 @@ struct TeamView: View {
                 .foregroundStyle(.primary)
                 .font(.system(size: 75, weight: .black, design: .default).width(.compressed))
                 .contentTransition(.numericText())
+                .animation(.default, value: score)
             if let imageUrl = team.image {
                 NavigationLink(destination: MyTeamView(team: team)) {  // Update this line
                     AsyncImage(url: URL(string: imageUrl)) { image in
@@ -390,24 +529,62 @@ struct TeamView: View {
     }
 }
 
+// Add this new card variant
+struct ScrollableInfoCard<Content: View>: View {
+    let title: String
+    let icon: String
+    let content: () -> Content
+    
+    init(
+        title: String,
+        icon: String,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.icon = icon
+        self.content = content
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: CardStyle.spacing) {
+            HStack(spacing: CardStyle.headerSpacing) {
+                Image(systemName: icon)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, CardStyle.padding)
+            
+            content()
+        }
+        .padding(.vertical, CardStyle.padding)
+        .background {
+            RoundedRectangle(cornerRadius: CardStyle.cornerRadius, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.03), radius: 3, x: 0, y: 1)
+        }
+        .padding(.horizontal)
+    }
+}
+
 struct TeamLineupView: View {
     let team: Team
     let players: [Player]
-    let gameId: Int  // Add this property
+    let gameId: Int
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(team.name)
-                .font(.headline)
-                .padding(.horizontal)
-            
+        ScrollableInfoCard(title: team.name, icon: "person.3.fill") {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 15) {
-                    ForEach(players) { player in
+                    ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
                         PlayerView(player: player, team: team, gameId: gameId)
+                            .padding(.leading, index == 0 ? CardStyle.padding : 0)
+                            .padding(.trailing, index == players.count - 1 ? CardStyle.padding : 0)
                     }
                 }
-                .padding(.horizontal)
             }
         }
     }
@@ -454,339 +631,6 @@ struct PlayerView: View {
     }
 }
 
-// 1. Cache field background pattern to avoid recreating it on every render
-class FieldBackgroundModel: ObservableObject {
-    let fieldPattern: some View = GeometryReader { geo in
-        Path { path in
-            let stripeWidth: CGFloat = 30
-            for x in stride(from: 0, through: geo.size.width, by: stripeWidth) {
-                path.move(to: CGPoint(x: x, y: 0))
-                path.addLine(to: CGPoint(x: x, y: geo.size.height))
-            }
-        }
-        .stroke(Color.white.opacity(0.05), lineWidth: 15)
-    }
-}
-
-// 2. Pre-calculate and cache player positions to avoid recalculation on every render
-struct SoccerFieldView: View {
-    let homeTeam: Team
-    let awayTeam: Team
-    let gameId: Int
-    @StateObject private var backgroundModel = FieldBackgroundModel()
-    @State private var playerPositions: [String: CGPoint] = [:]
-    
-    // Calculate positions once and cache them
-    private func calculatePositions(in size: CGSize) {
-        guard playerPositions.isEmpty else { return } // Only calculate once
-        
-        let basePositions: [(CGFloat, CGFloat)] = [
-            (0.95, 0.5), (0.85, 0.20), (0.85, 0.4), (0.85, 0.6), (0.85, 0.80),
-            (0.70, 0.30), (0.70, 0.5), (0.70, 0.70), (0.60, 0.15), (0.58, 0.5), (0.60, 0.85)
-        ]
-        
-        let width = size.width
-        let height = size.height
-        let dotTotalHeight: CGFloat = -10
-        let yOffset = dotTotalHeight / 2
-        
-        // Pre-calculate all positions
-        for (index, position) in basePositions.enumerated() {
-            // Home team positions
-            let homeX = (1.0 - position.0) * width
-            let homeY = position.1 * height - yOffset
-            playerPositions["home_\(index)"] = CGPoint(x: homeX, y: homeY)
-            
-            // Away team positions
-            let awayX = position.0 * width
-            let awayY = position.1 * height - yOffset
-            playerPositions["away_\(index)"] = CGPoint(x: awayX, y: awayY)
-        }
-    }
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Simplified background without shader
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(hex: "#1A472A"), Color(hex: "#2E8B57")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .opacity(0.8)
-                    }
-                    .overlay {
-                        backgroundModel.fieldPattern
-                    }
-                
-                // Enhanced field lines with glow effect
-                SoccerFieldLines()
-                    .opacity(0.7)
-                    .drawingGroup()
-                    .shadow(color: .white.opacity(0.3), radius: 2, x: 0, y: 0)
-                
-                // Player layer with enhanced shadows
-                PlayersLayer(
-                    homePlayers: homeTeam.players?.prefix(11).enumerated().map { ($0, $1) } ?? [],
-                    awayPlayers: awayTeam.players?.prefix(11).enumerated().map { ($0, $1) } ?? [],
-                    positions: playerPositions,
-                    homeColor: Color(hex: homeTeam.colors?[0] ?? "#FFFFFF"),
-                    awayColor: Color(hex: awayTeam.colors?[0] ?? "#00C0FF"),
-                    homeTeam: homeTeam,
-                    awayTeam: awayTeam,
-                    gameId: gameId
-                )
-                .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-            .drawingGroup()
-            .onAppear {
-                calculatePositions(in: geometry.size)
-            }
-            .onChange(of: geometry.size) { newSize in
-                calculatePositions(in: newSize)
-            }
-        }
-    }
-}
-
-// 8. Separate player rendering into its own component for better optimization
-struct PlayersLayer: View {
-    let homePlayers: [(Int, Player)]
-    let awayPlayers: [(Int, Player)]
-    let positions: [String: CGPoint]
-    let homeColor: Color
-    let awayColor: Color
-    let homeTeam: Team
-    let awayTeam: Team
-    let gameId: Int
-    
-    var body: some View {
-        ZStack {
-            // Home team players
-            ForEach(homePlayers, id: \.1.id) { index, player in
-                if let position = positions["home_\(index)"] {
-                    PlayerDot(player: player, teamColor: homeColor, team: homeTeam, gameId: gameId)
-                        .position(position)
-                }
-            }
-            
-            // Away team players
-            ForEach(awayPlayers, id: \.1.id) { index, player in
-                if let position = positions["away_\(index)"] {
-                    PlayerDot(player: player, teamColor: awayColor, team: awayTeam, gameId: gameId)
-                        .position(position)
-                }
-            }
-        }
-    }
-}
-
-// 9. Use Canvas for field lines instead of complex Shape paths
-struct SoccerFieldLines: View {
-    var body: some View {
-        Canvas { context, size in
-            let lineColor = Color.white
-            
-            // Outline
-            context.stroke(
-                Path { path in
-                    path.addRect(CGRect(origin: .zero, size: size))
-                },
-                with: .color(lineColor),
-                lineWidth: 2
-            )
-            
-            // Center line
-            context.stroke(
-                Path { path in
-                    path.move(to: CGPoint(x: size.width/2, y: 0))
-                    path.addLine(to: CGPoint(x: size.width/2, y: size.height))
-                },
-                with: .color(lineColor),
-                lineWidth: 2
-            )
-            
-            // Center circle
-            context.stroke(
-                Circle().path(in: CGRect(x: size.width/2 - size.height/6,
-                                         y: size.height/2 - size.height/6,
-                                         width: size.height/3,
-                                         height: size.height/3)),
-                with: .color(lineColor),
-                lineWidth: 2
-            )
-            
-            // Center dot
-            context.fill(
-                Circle().path(in: CGRect(x: size.width/2 - 4,
-                                         y: size.height/2 - 4,
-                                         width: 8,
-                                         height: 8)),
-                with: .color(lineColor)
-            )
-            
-            let penaltyAreaWidth = size.width * 0.16
-            let penaltyAreaHeight = size.height * 0.4
-            
-            // Corner arcs
-            let cornerRadius: CGFloat = size.height * 0.04
-            for (x, y) in [(0, 0), (size.width, 0), (0, size.height), (size.width, size.height)] {
-                context.stroke(
-                    Path { path in
-                        path.addArc(
-                            center: CGPoint(x: x, y: y),
-                            radius: cornerRadius,
-                            startAngle: Angle(degrees: x == 0 ? (y == 0 ? 0 : -90) : (y == 0 ? 90 : 180)),
-                            endAngle: Angle(degrees: x == 0 ? (y == 0 ? 90 : 0) : (y == 0 ? 180 : 270)),
-                            clockwise: false
-                        )
-                    },
-                    with: .color(lineColor),
-                    lineWidth: 2
-                )
-            }
-            
-            // Penalty areas
-            for isLeft in [true, false] {
-                let x = isLeft ? 0 : size.width - penaltyAreaWidth
-                let penaltyAreaY = (size.height - penaltyAreaHeight) / 2
-                
-                // Main penalty box
-                context.stroke(
-                    Path { path in
-                        path.addRect(CGRect(x: x,
-                                            y: penaltyAreaY,
-                                            width: penaltyAreaWidth,
-                                            height: penaltyAreaHeight))
-                    },
-                    with: .color(lineColor),
-                    lineWidth: 2
-                )
-                
-                // Goal box - smaller proportions
-                let goalBoxWidth = penaltyAreaWidth * 0.35
-                let goalBoxHeight = penaltyAreaHeight * 0.4
-                let goalBoxX = isLeft ? 0 : size.width - goalBoxWidth
-                let goalBoxY = (size.height - goalBoxHeight) / 2
-                context.stroke(
-                    Path { path in
-                        path.addRect(CGRect(x: goalBoxX,
-                                            y: goalBoxY,
-                                            width: goalBoxWidth,
-                                            height: goalBoxHeight))
-                    },
-                    with: .color(lineColor),
-                    lineWidth: 2
-                )
-                
-                // Penalty spot at correct FIFA distance
-                let penaltySpotX = isLeft ? (penaltyAreaWidth * 0.75) : (size.width - penaltyAreaWidth * 0.75)
-                let penaltySpotY = size.height * 0.5
-                
-                // Arc that matches FIFA specifications
-                let arcRadius = penaltyAreaWidth * 0.5  // Radius based on box width instead of height
-                
-                if isLeft {
-                    // Left penalty arc - exactly touching penalty box
-                    context.stroke(
-                        Path { path in
-                            path.addArc(
-                                center: CGPoint(x: penaltySpotX, y: penaltySpotY),
-                                radius: arcRadius,
-                                startAngle: Angle(degrees: -50),
-                                endAngle: Angle(degrees: 50),
-                                clockwise: false
-                            )
-                        },
-                        with: .color(lineColor),
-                        lineWidth: 2
-                    )
-                } else {
-                    // Right penalty arc - exactly touching penalty box
-                    context.stroke(
-                        Path { path in
-                            path.addArc(
-                                center: CGPoint(x: penaltySpotX, y: penaltySpotY),
-                                radius: arcRadius,
-                                startAngle: Angle(degrees: 130),
-                                endAngle: Angle(degrees: 230),
-                                clockwise: false
-                            )
-                        },
-                        with: .color(lineColor),
-                        lineWidth: 2
-                    )
-                }
-                
-                // Penalty spot
-                context.fill(
-                    Circle().path(in: CGRect(
-                        x: penaltySpotX - 3,
-                        y: penaltySpotY - 3,
-                        width: 6,
-                        height: 6
-                    )),
-                    with: .color(lineColor)
-                )
-            }
-        }
-    }
-}
-
-struct PlayerDot: View {
-    let player: Player
-    let teamColor: Color
-    let team: Team
-    let gameId: Int  // Add gameId parameter
-    @State private var isSheetPresented = false
-    
-    var body: some View {
-        VStack(spacing: 2) {
-            Circle()
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Circle()
-                        .fill(teamColor)
-                        .padding(1)
-                        .shadow(color: teamColor.opacity(0.5), radius: 2, x: 0, y: 0)
-                }
-                .overlay {
-                    Text(player.shirtNumber)
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundColor(teamColor.textColor())
-                }
-                .frame(width: 26, height: 26)
-                .onTapGesture {
-                    isSheetPresented.toggle()
-                }
-            
-            Text(player.name.split(separator: " ").last ?? "")
-                .font(.system(size: 8, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
-                .background {
-                    Capsule()
-                        .fill(.black.opacity(0.6))
-                        .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
-                }
-        }
-        .sheet(isPresented: $isSheetPresented) {
-            NavigationStack {
-                PlayerDetailView(playerId: player.id, team: team, gameId: gameId)
-            }
-        }
-    }
-}
-
 // Add this enum for consistent styling
 enum CardStyle {
     static let padding: CGFloat = 16
@@ -799,18 +643,15 @@ enum CardStyle {
 struct InfoCard<Content: View>: View {
     let title: String
     let icon: String
-    let isLoading: Bool
     let content: () -> Content
     
     init(
         title: String,
         icon: String,
-        isLoading: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
         self.icon = icon
-        self.isLoading = isLoading
         self.content = content
     }
     
@@ -824,10 +665,6 @@ struct InfoCard<Content: View>: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.7)
-                }
             }
             
             content()
@@ -878,7 +715,7 @@ struct StatColumn: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            if !title.isEmpty {
+            if (!title.isEmpty) {
                 Text(title)
                     .font(.system(.caption, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -946,8 +783,7 @@ struct StatBar: View {
 
 private func matchStatsCard(_ game: Game, _ viewModel: GameDetailViewModel,isStatsLoaded: Bool) -> some View {
     InfoCard(title: "Match Stats", icon: "chart.bar.fill") {
-        if(isStatsLoaded){
-      VStack(spacing: CardStyle.spacing) {
+        VStack(spacing: CardStyle.spacing) {
             HStack(spacing: 0) {
                 StatColumn(
                     title: game.homeTeam.name,
@@ -1121,9 +957,6 @@ private func matchStatsCard(_ game: Game, _ viewModel: GameDetailViewModel,isSta
                 .padding(.bottom, 8)
             }
         }
-        } else {
-            ProgressView()
-        }
     }
 }
 
@@ -1152,7 +985,12 @@ struct FormIndicator: View {
 }
 
 // Modify eventsCard to include game parameter
-@MainActor private func eventsCard(_ game: Game, _ viewModel: GameDetailViewModel, gameId: Int) -> some View {
+@MainActor private func eventsCard(
+    _ game: Game,
+    _ viewModel: GameDetailViewModel,
+    gameId: Int,
+    updateLiveActivityScore: @escaping (Event) -> Void
+) -> some View {
     @State var localEvents: [Event] = viewModel.events
     
     return InfoCard(title: "Key Events", icon: "clock.fill") {
@@ -1195,6 +1033,10 @@ struct FormIndicator: View {
     }
     .onChange(of: viewModel.events) { newEvents in
         print("📊 Events updated: \(newEvents.count) events")
+        if let latestEvent = newEvents.max(by: { $0.id < $1.id }),
+           !localEvents.contains(where: { $0.id == latestEvent.id }) {
+            updateLiveActivityScore(latestEvent)
+        }
         localEvents = newEvents
     }
 }
@@ -1267,7 +1109,6 @@ private func formGuideCard(_ game: Game, _ viewModel: GameDetailViewModel) -> so
                 }
                 
                 Spacer()
-                
                 VStack(alignment: .trailing, spacing: 8) {
                     Text(game.awayTeam.name)
                         .font(.system(.footnote, weight: .medium))
@@ -1295,4 +1136,17 @@ private func convertResult(_ result: String) -> String {
 private func padResults(_ results: [String], count: Int = 5) -> [String] {
     let padding = Array(repeating: "empty", count: max(0, count - results.count))
     return Array(results.prefix(count)) + padding
+}
+
+private var loadingAdditionalInfo: some View {
+    VStack(alignment: .leading, spacing: 16) {
+        Text("Loading Game Information")
+            .font(.title3)
+            .fontWeight(.bold)
+            .padding(.horizontal)
+        
+        ProgressView()
+            .frame(maxWidth: .infinity)
+            .padding()
+    }
 }

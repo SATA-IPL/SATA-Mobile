@@ -127,6 +127,7 @@ struct ShimmerModifier: ViewModifier {
 struct ChatView: View {
     let game: Game
     let model: GenerativeModel
+    @StateObject private var viewModel = GameDetailViewModel()
     @Binding var isPresented: Bool
     @State private var messageText = ""
     @State private var messages: [(text: String, isUser: Bool)] = []
@@ -220,10 +221,6 @@ struct ChatView: View {
                                     }
                                     SuggestionButton(text: "Who scored?") {
                                         messageText = "Who scored in this game?"
-                                        sendMessage()
-                                    }
-                                    SuggestionButton(text: "Best player") {
-                                        messageText = "Who was the best player in the game?"
                                         sendMessage()
                                     }
                                     SuggestionButton(text: "Game highlights") {
@@ -374,14 +371,16 @@ struct ChatView: View {
         
         Task {
             do {
-                // Add game context to the prompt
+                // Update to use viewModel's generateContext
                 let prompt = """
-                    \(game.generateContext())
+                    \(viewModel.generateContext())
                     
                     User Question: \(userMessage)
                     
                     Please provide a natural, conversational response based on the game information above.
                     """
+                
+                print("Prompt: \(prompt)")
                 
                 let result = try await model.generateContent(prompt)
                 withAnimation {

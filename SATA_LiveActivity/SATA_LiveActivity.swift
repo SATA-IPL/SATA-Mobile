@@ -20,6 +20,7 @@ struct SATA_LiveActivity: Widget {
                         Text(context.attributes.homeTeam.prefix(3).uppercased())
                             .font(.system(size: 18, weight: .bold))
                             .frame(width: 40, height: 40)
+                            .background(.white.opacity(0.1))
                             .background(Circle().fill(Color(hex: context.attributes.homeTeamColor)))
                             .foregroundColor(Color(hex: context.attributes.homeTeamColor).textColor())
                         Text("\(context.state.homeScore)")
@@ -32,6 +33,7 @@ struct SATA_LiveActivity: Widget {
                         Text(context.attributes.awayTeam.prefix(3).uppercased())
                             .font(.system(size: 18, weight: .bold))
                             .frame(width: 40, height: 40)
+                            .background(.white.opacity(0.1))
                             .background(Circle().fill(Color(hex: context.attributes.awayTeamColor)))
                             .foregroundColor(Color(hex: context.attributes.awayTeamColor).textColor())
                         Text("\(context.state.awayScore)")
@@ -65,7 +67,7 @@ struct SATA_LiveActivity: Widget {
                 HStack(spacing: 10) {
                     Text(context.attributes.homeTeam.prefix(3).uppercased())
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: context.attributes.homeTeamColor))
+                        .foregroundColor(context.attributes.homeTeamColor == "#121212" || context.attributes.homeTeamColor == "#000000" ? .white : Color(hex: context.attributes.homeTeamColor))
                     Text("\(context.state.homeScore)")
                         .font(.system(size: 25))
                         .fontWeight(.black)
@@ -79,7 +81,7 @@ struct SATA_LiveActivity: Widget {
                         .fontWidth(.compressed)
                     Text(context.attributes.awayTeam.prefix(3).uppercased())
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: context.attributes.awayTeamColor))
+                        .foregroundColor(context.attributes.awayTeamColor == "#121212" || context.attributes.awayTeamColor == "#000000" ? .white : Color(hex: context.attributes.awayTeamColor))
                 }
             } minimal: {
                 Text("\(context.state.homeScore)-\(context.state.awayScore)")
@@ -177,6 +179,7 @@ struct SATAGameWidgetView: View {
                     .padding(.bottom, 12)
                 }
             }
+            .preferredColorScheme(.dark)
             .frame(maxWidth: .infinity)
             .frame(height: 140)
             .clipped()
@@ -233,6 +236,7 @@ struct SATAGameWidgetView: View {
                     .padding(.horizontal, 8)
                 }
             }
+            .preferredColorScheme(.dark)
             .frame(maxWidth: .infinity)
             .clipped()
             .mask { RoundedRectangle(cornerRadius: 16, style: .continuous) }

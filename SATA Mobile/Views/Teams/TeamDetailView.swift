@@ -125,16 +125,12 @@ struct TeamDetailView: View {
                 InfoCard(title: "Next Match", icon: "calendar") {
                     HStack {
                         VStack(alignment: .leading) {
-                            Text(nextMatch.opponent)
+                            Text(nextMatch.awayTeam.name)
                                 .font(.headline)
                             Text(nextMatch.date)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
-                        Spacer()
-                        Text(nextMatch.competition)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -167,9 +163,7 @@ struct TeamDetailView: View {
     
     private var matchesSection: some View {
         VStack(spacing: 16) {
-            ForEach(viewModel.matches) { match in
-                MatchRow(match: match)
-            }
+            Text("Matches")
         }
         .padding()
     }
@@ -217,31 +211,6 @@ struct PlayerCard: View {
             Text("#\(player.shirtNumber)")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)
-        }
-        .padding()
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-struct MatchRow: View {
-    let match: Match
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(match.opponent)
-                    .font(.headline)
-                Text(match.date)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            Spacer()
-            
-            Text(match.score)
-                .font(.title3.bold())
-                .foregroundStyle(match.result == "W" ? .green : (match.result == "L" ? .red : .primary))
         }
         .padding()
         .background(.ultraThinMaterial)

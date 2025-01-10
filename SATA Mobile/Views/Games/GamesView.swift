@@ -1,8 +1,12 @@
 import SwiftUI
 
+/// A view that displays games in both list and calendar formats with filtering capabilities.
 struct GamesView: View {
+    // MARK: - View Model
     @StateObject private var viewModel = GamesViewModel()
     @StateObject private var teamsViewModel = TeamsViewModel()
+    
+    // MARK: - View States
     @Namespace private var namespace
     @State private var hasInitiallyFetched = false
     @State private var selectedTeamFilter: Team? = nil
@@ -12,6 +16,7 @@ struct GamesView: View {
     @State private var isTeamsLoading = false
     @State private var hideOldGames = true
 
+    // MARK: - Body
     var body: some View {
         Group { content }
             .onAppear(perform: handleOnAppear)
@@ -46,16 +51,18 @@ struct GamesView: View {
             }
     }
 
-    // MARK: - Private Methods
+    // MARK: - Lifecycle Methods
     
+    /// Handles the initial data fetch when the view appears.
     private func handleOnAppear() {
         guard !hasInitiallyFetched else { return }
         hasInitiallyFetched = true
         Task { await viewModel.fetchGames() }
     }
     
-    // MARK: - View Components
+    // MARK: - Main View Components
     
+    /// The main content view that switches between different states.
     @ViewBuilder
     private var content: some View {
         switch viewModel.state {
@@ -79,6 +86,7 @@ struct GamesView: View {
         }
     }
     
+    /// Displays a loading skeleton view while fetching games.
     private var loadingGamesView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -91,6 +99,7 @@ struct GamesView: View {
         .background(.clear)
     }
     
+    /// Displays the list of games with filtering.
     private var gamesList: some View {
         Group {
             if filteredGames.isEmpty {
@@ -115,6 +124,9 @@ struct GamesView: View {
         }
     }
 
+    // MARK: - State Views
+    
+    /// Displays an error state with retry option.
     private func errorView(message: String) -> some View {
         ContentUnavailableView {
             Label("Unable to Load Games", systemImage: "wifi.slash")
@@ -130,6 +142,7 @@ struct GamesView: View {
         }
     }
     
+    /// Displays when no games are available.
     private var emptyStateView: some View {
         ContentUnavailableView {
             Label("No Games Scheduled", systemImage: "sportscourt")
@@ -145,6 +158,7 @@ struct GamesView: View {
         }
     }
     
+    /// Displays when filtered results are empty.
     private var filteredEmptyStateView: some View {
         ContentUnavailableView {
             Label("No Games Found", systemImage: "magnifyingglass")
@@ -162,6 +176,9 @@ struct GamesView: View {
         }
     }
     
+    // MARK: - Navigation and Control Components
+    
+    /// Menu for filtering games by team.
     private var teamFilterMenu: some View {
         Menu {
             if isTeamsLoading {
@@ -213,6 +230,7 @@ struct GamesView: View {
         }
     }
 
+    /// Toggle button for switching between list and calendar views.
     private var viewModeToggle: some View {
         Button {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -224,6 +242,9 @@ struct GamesView: View {
         }
     }
 
+    // MARK: - Calendar View Components
+    
+    /// Calendar view for displaying games organized by date.
     private var calendarView: some View {
         VStack(spacing: 0) {
             monthPickerView
@@ -279,6 +300,7 @@ struct GamesView: View {
         }
     }
 
+    /// Month selection picker for calendar view.
     private var monthPickerView: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 0) {
@@ -322,8 +344,9 @@ struct GamesView: View {
         }
     }
 
-    // MARK: - Helper Properties and Methods
-
+    // MARK: - Helper Properties
+    
+    /// Returns filtered games based on selected team and hide old games toggle.
     private var filteredGames: [Game] {
         var games = viewModel.games
         
@@ -346,6 +369,7 @@ struct GamesView: View {
         return games
     }
 
+    /// Groups games by date for calendar view.
     @MainActor
     private var groupedGames: [String: [Game]] {
         Dictionary(grouping: filteredGames) { game in
@@ -353,6 +377,7 @@ struct GamesView: View {
         }
     }
 
+    /// Checks if there are games scheduled for the selected month.
     private var hasGamesForSelectedMonth: Bool {
         groupedGames.keys.contains { date in
             if let monthFromDate = Int(date.split(separator: "-")[1]) {
@@ -362,6 +387,11 @@ struct GamesView: View {
         }
     }
 
+    // MARK: - Utility Methods
+    
+    /// Formats a date string into a readable format.
+    /// - Parameter dateString: Date string in "yyyy-MM-dd" format
+    /// - Returns: Formatted date string
     private func formatDate(_ dateString: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -372,8 +402,10 @@ struct GamesView: View {
     }
 }
 
-// Add this extension at the bottom of the file
+// MARK: - DateFormatter Extension
+
 extension DateFormatter {
+    /// Formatter for "yyyy-MM-dd" date format
     static let yyyyMMdd: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"

@@ -104,7 +104,7 @@ class GameDetailViewModel: ObservableObject {
     }
 
     func fetchHomeStatistics(gameId: Int) async {
-        print("📱 Starting to fetch events for game ID: \(gameId)")
+        print("📱 Starting to fetch Statistics for game ID: \(gameId)")
         
         guard let url = URL(string: "http://144.24.177.214:5000/game/\(gameId)/statistics/home") else {
             print("❌ Invalid URL for home statistics endpoint")
@@ -198,6 +198,33 @@ class GameDetailViewModel: ObservableObject {
         listeningTask?.cancel()
         listeningTask = nil
         print("Stopped listening to events.")
+    }
+
+    func fetchEvents(gameId: Int) async {
+        print("📱 Starting to fetch events for game ID: \(gameId)")
+        
+        guard let url = URL(string: "http://144.24.177.214:5000/events/\(gameId)") else {
+            print("❌ Invalid URL for events endpoint")
+            return
+        }
+
+        do {
+            print("🌐 Fetching events from network...")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            print("✅ Events data received: \(data.count) bytes")
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📄 Received JSON: \(jsonString)")
+            }
+            
+            let events = try JSONDecoder().decode([Event].self, from: data)
+            await MainActor.run {
+                self.events = events
+            }
+            print("📊 Successfully decoded \(events.count) events")
+        } catch {
+            print("❌ Error fetching events: \(error.localizedDescription)")
+        }
     }
 
     func startListeningToGameDetails(gameId: Int) {
@@ -351,78 +378,117 @@ class GameDetailViewModel: ObservableObject {
         }
     }
 
-    func generateContext() -> String {
-        guard let game = self.game else {
-            return "No game information available."
+    func generateContext(game: Game) async -> String {
+        // Fetch game details if we haven't already
+        if self.game == nil {
+            await fetchGameDetail(id: game.id)
+            await fetchHomeStatistics(gameId: game.id)
+            await fetchAwayStatistics(gameId: game.id)
+            await fetchEvents(gameId: game.id)
         }
+        
+        //Start Listening to Events
+        startListeningToEvents(gameId: game.id)
+        
+        // Use the fetched game data if available, otherwise use the passed game
+        let contextGame = self.game ?? game
         
         var context = """
             Game Info:
-            - Match: \(game.homeTeam.name) vs \(game.awayTeam.name)
-            - Score: \(game.homeScore)-\(game.awayScore)
-            - Date: \(game.date)
-            - Time: \(game.hour)
-            - Status: \(game.state)
+            - Match: \(contextGame.homeTeam.name) vs \(contextGame.awayTeam.name)
+            - Score: \(contextGame.homeScore)-\(contextGame.awayScore)
+            - Date: \(contextGame.date)
+            - Time: \(contextGame.hour)
+            - Status: \(contextGame.state)
             """
-        
-        if let venue = game.venue {
-            context += "\n- Venue: \(venue)"
+
+        if let stadium = contextGame.stadium {
+            context += "\n- Stadium: \(stadium.stadiumName)"
         }
 
+        // Debug print to check players
+        print("Home team players: \(String(describing: contextGame.homeTeam.players?.count))")
+        print("Away team players: \(String(describing: contextGame.awayTeam.players?.count))")
+
         // Add team information
-        if let homePlayers = game.homeTeam.players {
-            context += "\n\nHome Team Players (\(game.homeTeam.name)):"
+        if let homePlayers = contextGame.homeTeam.players {
+            context += "\n\nHome Team Players (\(contextGame.homeTeam.name)):"
             for player in homePlayers {
                 context += "\n- \(player.name) (#\(player.shirtNumber), \(player.position))"
             }
         }
         
-        if let awayPlayers = game.awayTeam.players {
-            context += "\n\nAway Team Players (\(game.awayTeam.name)):"
+        if let awayPlayers = contextGame.awayTeam.players {
+            context += "\n\nAway Team Players (\(contextGame.awayTeam.name)):"
             for player in awayPlayers {
                 context += "\n- \(player.name) (#\(player.shirtNumber), \(player.position))"
             }
         }
-        
-        // Add statistics if available
-        if !homeStatistics.isEmpty && !awayStatistics.isEmpty {
-            context += "\n\nMatch Statistics:"
-            if let homeStats = homeStatistics.first, let awayStats = awayStatistics.first {
-                context += """
-                
-                - Shots: \(homeStats.finish) vs \(awayStats.finish)
-                - Passes: \(homeStats.passes) vs \(awayStats.passes)
-                - Tackles: \(homeStats.tackle) vs \(awayStats.tackle)
-                - Saves: \(homeStats.defense) vs \(awayStats.defense)
-                - Fouls: \(homeStats.foul) vs \(awayStats.foul)
-                - Yellow Cards: \(homeStats.yellowCard) vs \(awayStats.yellowCard)
-                - Red Cards: \(homeStats.redCard) vs \(awayStats.redCard)
-                """
+
+        //Stats
+        if !homeStatistics.isEmpty {
+            context += "\n\nHome Team Statistics:"
+            for stat in homeStatistics {
+                context += "\n- Assists: \(stat.assist)"
+                context += "\n- Corners: \(stat.corner)"
+                context += "\n- Defenses: \(stat.defense)"
+                context += "\n- Finishes: \(stat.finish)"
+                context += "\n- Fouls: \(stat.foul)"
+                context += "\n- Free Kicks: \(stat.freeKick)"
+                context += "\n- Goals: \(stat.goal)"
+                context += "\n- Interceptions: \(stat.interception)"
+                context += "\n- Offsides: \(stat.offside)"
+                context += "\n- Passes: \(stat.passes)"
+                context += "\n- Penalties: \(stat.penalty)"
+                context += "\n- Red Cards: \(stat.redCard)"
+                context += "\n- Substitutions: \(stat.substitution)"
+                context += "\n- Tackles: \(stat.tackle)"
+                context += "\n- Yellow Cards: \(stat.yellowCard)"
+            }
+        }
+
+        if !awayStatistics.isEmpty {
+            context += "\n\nAway Team Statistics:"
+            for stat in awayStatistics {
+                context += "\n- Assists: \(stat.assist)"
+                context += "\n- Corners: \(stat.corner)"
+                context += "\n- Defenses: \(stat.defense)"
+                context += "\n- Finishes: \(stat.finish)"
+                context += "\n- Fouls: \(stat.foul)"
+                context += "\n- Free Kicks: \(stat.freeKick)"
+                context += "\n- Goals: \(stat.goal)"
+                context += "\n- Interceptions: \(stat.interception)"
+                context += "\n- Offsides: \(stat.offside)"
+                context += "\n- Passes: \(stat.passes)"
+                context += "\n- Penalties: \(stat.penalty)"
+                context += "\n- Red Cards: \(stat.redCard)"
+                context += "\n- Substitutions: \(stat.substitution)"
+                context += "\n- Tackles: \(stat.tackle)"
+                context += "\n- Yellow Cards: \(stat.yellowCard)"
             }
         }
         
-        // Add game events
-        if !events.isEmpty {
-            context += "\n\nGame Events:"
-            for event in events.sorted(by: { $0.minute < $1.minute }) {
-                let teamName = event.team_id == Int(game.homeTeam.id) ? game.homeTeam.name : game.awayTeam.name
-                let playerInfo = event.player_id.map { id -> String in
-                    if let player = (game.homeTeam.players?.first { $0.id == id } ?? game.awayTeam.players?.first { $0.id == id }) {
-                        return player.name
-                    }
-                    return "Unknown Player"
-                } ?? "Unknown Player"
-                
-                context += "\n- Minute \(event.minute): \(event.event_type) by \(playerInfo) (\(teamName))"
+        // Event log
+        context += "\n\nEvent Log:"
+        for event in events {
+            let player = contextGame.homeTeam.players?.first(where: { $0.id == event.player_id })
+            let teamName: String
+            let playerName: String
+            
+            if let homePlayer = player {
+                teamName = contextGame.homeTeam.name
+                playerName = homePlayer.name
+            } else if let awayPlayer = contextGame.awayTeam.players?.first(where: { $0.id == event.player_id }) {
+                teamName = contextGame.awayTeam.name
+                playerName = awayPlayer.name
+            } else {
+                teamName = "Unknown Team"
+                playerName = "Unknown Player"
             }
+            
+            context += "\n- \(event.event_type): \(teamName) - \(playerName)"
         }
-        
-        // Add predicted winner if available
-        if let predictedWinner = predictedWinner {
-            let winningTeam = (predictedWinner == game.homeTeam.id) ? game.homeTeam.name : game.awayTeam.name
-            context += "\n\nPredicted Winner: \(winningTeam)"
-        }
-        
+
         return context
     }
 }

@@ -81,15 +81,15 @@ struct PlayerDetailView: View {
                 
                 // Season stats
                 HStack {
-                    StatItem(value: player.stats?.appearances ?? 0, label: "Games")
+                    PlayerStatItem(value: player.stats?.appearances ?? 0, label: "Games")
                     Spacer()
-                    StatItem(value: player.stats?.goals ?? 0, label: "Goals")
+                    PlayerStatItem(value: player.stats?.goals ?? 0, label: "Goals")
                     Spacer()
-                    StatItem(value: player.stats?.assists ?? 0, label: "Assists")
+                    PlayerStatItem(value: player.stats?.assists ?? 0, label: "Assists")
                     Spacer()
-                    StatItem(value: player.stats?.yellowCards ?? 0, label: "Yellows")
+                    PlayerStatItem(value: player.stats?.yellowCards ?? 0, label: "Yellows")
                     Spacer()
-                    StatItem(value: player.stats?.redCards ?? 0, label: "Reds")
+                    PlayerStatItem(value: player.stats?.redCards ?? 0, label: "Reds")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -192,7 +192,7 @@ struct PlayerInfoItem: View {
     }
 }
 
-struct StatItem: View {
+struct PlayerStatItem: View {
     let value: Int
     let label: String
     

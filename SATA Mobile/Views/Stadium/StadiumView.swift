@@ -1,12 +1,21 @@
 import SwiftUI
 import MapKit
 
+/// A view that displays detailed information about a stadium, including a 3D map view and stadium details
 struct StadiumView: View {
+    // MARK: - Properties
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: StadiumsViewModel
     @State var stadium: Stadium
     @State private var distance: CLLocationDistance = 900
     
+    // MARK: - Initialization
+    
+    /// Initializes a new stadium view
+    /// - Parameters:
+    ///   - viewModel: The view model managing stadiums data
+    ///   - stadium: The stadium to display
+    ///   - distance: The initial camera distance from the stadium
     init(viewModel: StadiumsViewModel, stadium: Stadium, distance: CLLocationDistance = 900) {
         self.viewModel = viewModel
         _stadium = State(initialValue: stadium)
@@ -18,7 +27,9 @@ struct StadiumView: View {
         UINavigationBar.appearance().standardAppearance = appearance
     }
     
+    // MARK: - Helper Methods
     
+    /// Opens the stadium location in Apple Maps with driving directions
     func openInMaps() {
         let placemark = MKPlacemark(coordinate: stadium.coordinate)
         let mapItem = MKMapItem(placemark: placemark)
@@ -28,6 +39,7 @@ struct StadiumView: View {
         ])
     }
     
+    // MARK: - Body
     
     var body: some View {
         NavigationStack {
@@ -72,13 +84,16 @@ struct StadiumView: View {
 
 // MARK: - Map Container View
 
+/// A view that displays an interactive 3D map of the stadium location
 struct MapContainerView: View {
+    // MARK: - Properties
     @State var stadium: Stadium
     @State private var position: MapCameraPosition = .automatic
     @State private var heading: CLLocationDirection = 100
     private let rotationSpeed: CLLocationDirection = 0.1
     @State var distance: CLLocationDistance
-
+    
+    /// Custom map style configuration
     private var customMapStyle: MapStyle {
         .standard(
             elevation: .realistic,
@@ -86,6 +101,8 @@ struct MapContainerView: View {
             showsTraffic: false
         )
     }
+    
+    // MARK: - Body
     
     var body: some View {
         Map(
@@ -112,6 +129,9 @@ struct MapContainerView: View {
         }
     }
     
+    // MARK: - Helper Methods
+    
+    /// Starts the continuous panning animation of the map camera
     private func startPanning() {
         // Use a timer to update the heading gradually
         Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
@@ -138,17 +158,21 @@ struct MapContainerView: View {
 
 // MARK: - Bottom Content View
 
+/// A view displaying stadium information in a glass-like container at the bottom of the screen
 struct BottomContentView: View {
+    // MARK: - Properties
     let stadium: Stadium
     let proxy: GeometryProxy
-
+    
+    // MARK: - Body
+    
     var body: some View {
         VStack {
             Spacer()
             bottomContentContainer
                 .padding(.bottom, 120)
                 .background(
-                    bottomContentBackground,
+                    bottomContentGradientBackground,
                     alignment: .bottom
                 )
                 .background(
@@ -157,7 +181,10 @@ struct BottomContentView: View {
                 )
         }
     }
-
+    
+    // MARK: - Subviews
+    
+    /// Container for the bottom content with padding and spacing
     private var bottomContentContainer: some View {
         VStack(spacing: 24) {
              capacityView
@@ -175,7 +202,8 @@ struct BottomContentView: View {
                 .padding(.horizontal)
         }
     }
-
+    
+    /// View displaying the stadium's capacity
     private var capacityView: some View {
         HStack {
             Image(systemName: "person.3.fill")
@@ -195,8 +223,9 @@ struct BottomContentView: View {
         )
         .fontDesign(.default)
     }
-
-    private var bottomContentBackground: some View {
+    
+    /// Background gradient for the bottom content
+    private var bottomContentGradientBackground: some View {
          // Updated Gradient to blend seamlessly with the map
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -210,6 +239,7 @@ struct BottomContentView: View {
                 .frame(width: proxy.size.width)
     }
     
+    /// Blur effect for the bottom content background
     private var bottomContentBlurBackground: some View {
         VariableBlurView(maxBlurRadius: 20, direction: .blurredBottomClearTop)
     }
@@ -217,12 +247,16 @@ struct BottomContentView: View {
 
 // MARK: - Glass Toolbar
 
+/// A custom toolbar with a glass-like appearance
 struct GlassToolbar: ToolbarContent {
+    // MARK: - Properties
     let title: String
     let dismiss: DismissAction
     let openInMaps: () -> Void
     let isFavorite: Bool
     let toggleFavorite: () -> Void
+    
+    // MARK: - Body
     
     var body: some ToolbarContent {
          ToolbarItem(placement: .principal) {

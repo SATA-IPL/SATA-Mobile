@@ -1,63 +1,47 @@
-//
-//  ContentView.swift
-//  SATA Mobile
-//
-//  Created by João Franco on 26/12/2024.
-//
-
 import SwiftUI
 import SwiftData
 
-enum Tab: String, Hashable {
-    case games
-    case myTeam
-    case profile
-    
-    var title: String {
-        switch self {
-        case .games:
-            return "Games"
-        case .myTeam:
-            return "My Team"
-        case .profile:
-            return "Profile"
-        }
-    }
-}
-
+/// The main content view of the SATA Mobile application
 struct ContentView: View {
+    // MARK: - View Models
     @StateObject private var gamesViewModel = GamesViewModel()
     @StateObject private var teamsViewModel = TeamsViewModel()
     @StateObject private var stadiumsViewModel = StadiumsViewModel()
     @StateObject private var playerViewModel = PlayerViewModel()
+    
+    // MARK: - State Properties
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding = false
     @State private var showTeamSelection = false
-    
     @State private var selectedTab: Tab = Tab.games
     
+    // MARK: - Body
     var body: some View {
         GeometryReader { proxy in
-            
             ZStack {
+                // MARK: Background Gradient
                 LinearGradient(
                     colors: [.red.opacity(0.8), .red.opacity(0.3)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                    TabView(selection: $selectedTab) {
-                        NavigationStack {
-                            GamesView()
-                                .navigationTitle("Games")
-                        }
-                        .tag(Tab.games)
-                        .tabItem {
-                            Label("Games", systemImage: "sportscourt.fill")
-                        }
-                        
-                        NavigationStack {
-                            switch teamsViewModel.state {
+                
+                // MARK: Tab Views
+                TabView(selection: $selectedTab) {
+                    // MARK: Games Tab
+                    NavigationStack {
+                        GamesView()
+                            .navigationTitle("Games")
+                    }
+                    .tag(Tab.games)
+                    .tabItem {
+                        Label("Games", systemImage: "sportscourt.fill")
+                    }
+                    
+                    // MARK: My Team Tab
+                    NavigationStack {
+                        switch teamsViewModel.state {
                             case .loading:
                                 ProgressView("Loading team...")
                                     .navigationTitle("My Team")
@@ -105,38 +89,44 @@ struct ContentView: View {
                                 .navigationTitle("Error")
                             }
                         }
-                        .tag(Tab.myTeam)
-                        .tabItem {
-                            Label("My Team", systemImage: "star.fill")
-                        }
-                        
-                        NavigationStack {
-                            ProfileView()
-                                .navigationTitle("Profile")
-                        }
-                        .tag(Tab.profile)
-                        .tabItem {
-                            Label("Profile", systemImage: "person.circle.fill")
-                        }
+                    .tag(Tab.myTeam)
+                    .tabItem {
+                        Label("My Team", systemImage: "star.fill")
                     }
-                    .navigationTitle("SATA")
-                    .tabViewStyle(.sidebarAdaptable)
+                    
+                    // MARK: Profile Tab
+                    NavigationStack {
+                        ProfileView()
+                            .navigationTitle("Profile")
+                    }
+                    .tag(Tab.profile)
+                    .tabItem {
+                        Label("Profile", systemImage: "person.circle.fill")
+                    }
+                }
+                .navigationTitle("SATA")
+                .tabViewStyle(.sidebarAdaptable)
             }
+            
+            // MARK: - Sheets
             .sheet(isPresented: $showOnboarding, onDismiss: {
                 hasSeenOnboarding = true
             }) {
                 OnboardingView()
-                .preferredColorScheme(.dark)
+                    .preferredColorScheme(.dark)
             }
             .sheet(isPresented: $showTeamSelection) {
                 TeamSelectionView(teamsViewModel: teamsViewModel)
             }
+            
+            // MARK: - Lifecycle
             .onAppear {
+                /// Show onboarding if user has not seen it
                 if !hasSeenOnboarding {
                     showOnboarding = true
                 }
                 
-                // Pre-fetch teams and games data
+                /// Pre-fetch teams and games data
                 Task {
                     await teamsViewModel.fetchTeams()
                     await gamesViewModel.fetchGames()
@@ -147,6 +137,8 @@ struct ContentView: View {
                     }
                 }
             }
+            
+            // MARK: - Environment Objects
             .environmentObject(gamesViewModel)
             .environmentObject(teamsViewModel)
             .environmentObject(stadiumsViewModel)
@@ -158,6 +150,7 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Preview
 #Preview {
     ContentView()
 }

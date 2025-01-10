@@ -59,13 +59,55 @@ struct OnboardingView: View {
                         case .welcome:
                             WelcomeView(path: $path, onDismiss: handleCompletion)
                         case .siri:
-                            ShowcaseSiriView(path: $path)
+                            FeatureShowcase(
+                                imageName: "Siri",
+                                title: "Siri",
+                                description: "Use Siri to ask questions about your next team games, open the app, or integrate with Shortcuts for automated workflows. Just say \"Hey Siri, what can I do here?\" to get started.",
+                                footnote: "This feature uses App Intents and Shortcuts to enable quick access and automation through Siri or Shortcuts app."
+                            ) {
+                                PrimaryButton(title: "Continue") {
+                                    path.append(OnboardingPage.dynamicIsland)
+                                }
+                            }
                         case .dynamicIsland:
-                            ShowcaseDynamicIslandView(path: $path)
+                            FeatureShowcase(
+                                imageName: "DynamicIsland",
+                                title: "Dynamic Island",
+                                description: "Stay updated with live activities right from your Dynamic Island. Track game scores, match times, and more without opening the app.",
+                                footnote: "This feature requires iPhone 14 Pro or later. Live Activities need to be enabled in Settings."
+                            ) {
+                                PrimaryButton(title: "Continue") {
+                                    path.append(OnboardingPage.standBy)
+                                }
+                            }
                         case .standBy:
-                            ShowcaseStandByView(path: $path)
+                            FeatureShowcase(
+                                imageName: "StandBy",
+                                title: "StandBy Mode",
+                                description: "Keep track of your games while charging. View scores, upcoming matches, and team statistics in a glanceable format when your iPhone is on its side.",
+                                footnote: "StandBy requires iOS 17 or later and works when your iPhone is charging and positioned sideways."
+                            ) {
+                                Button(action: {
+                                    path.append(OnboardingPage.watchLiveActivity)
+                                }) {
+                                    Text("Continue")
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 16)
+                                        .background(.accent.opacity(0.6))
+                                        .cornerRadius(12)
+                                }
+                            }
                         case .watchLiveActivity:
-                            ShowcaseLiveActivityView(onComplete: handleCompletion)
+                            FeatureShowcase(
+                                imageName: "WatchLiveActivity",
+                                title: "Apple Watch Updates",
+                                description: "Get live game updates right on your wrist. Follow scores, match progress, and important events with a quick glance at your Apple Watch.",
+                                footnote: "Requires Apple Watch with watchOS 11 or later. Make sure your Watch is paired and notifications are enabled."
+                            ) {
+                                PrimaryButton(title: "Get Started", action: handleCompletion)
+                            }
                         }
                     }
                 }

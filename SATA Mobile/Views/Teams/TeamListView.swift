@@ -1,9 +1,13 @@
 import SwiftUI
 
+/// A view that displays a list of teams with search functionality
 struct TeamListView: View {
+    // MARK: - Properties
     @EnvironmentObject private var teamsViewModel: TeamsViewModel
     @State private var searchText = ""
     
+    /// Filtered teams based on search text
+    /// Returns all teams if search text is empty, otherwise returns teams matching the search criteria
     var filteredTeams: [Team] {
         guard !searchText.isEmpty else { return teamsViewModel.teams }
         return teamsViewModel.teams.filter { team in
@@ -11,7 +15,9 @@ struct TeamListView: View {
         }
     }
     
+    // MARK: - View Body
     var body: some View {
+        // Background gradient
         ZStack {
             LinearGradient(
                 gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
@@ -20,11 +26,13 @@ struct TeamListView: View {
             )
             .ignoresSafeArea()
             
+            // MARK: - Content
             Group {
                 switch teamsViewModel.state {
                 case .loading:
                     ProgressView()
                 case .loaded:
+                    // Team list with search functionality
                     List(filteredTeams) { team in
                         NavigationLink(destination: MyTeamView(team: team)) {
                             HStack {
@@ -56,6 +64,7 @@ struct TeamListView: View {
                     .searchable(text: $searchText, prompt: "Search teams")
                     .scrollContentBackground(.hidden)
                 case .error(let message):
+                    // Error view with retry action
                     ContentUnavailableView {
                         Label("Unable to Load Team", systemImage: "exclamationmark.triangle")
                     } description: {

@@ -7,15 +7,23 @@
 
 import SwiftUI
 
+/// A view that allows users to select a team from a list of available teams.
+/// This view provides searching capabilities and confirms the user's selection.
 struct TeamSelectionView: View {
+    // MARK: - Environment & State Properties
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var teamsViewModel: TeamsViewModel
+    
+    // UI State
     @State private var showContent = false
     @State private var selectedTeam: Team?
     @State private var currentTeamId: String?
     @State private var searchText = ""
     @State private var showingConfirmation = false
     
+    // MARK: - Computed Properties
+    
+    /// Returns filtered teams based on search text
     private var filteredTeams: [Team] {
         guard !searchText.isEmpty else { return teamsViewModel.teams }
         return teamsViewModel.teams.filter { 
@@ -23,6 +31,7 @@ struct TeamSelectionView: View {
         }
     }
     
+    // MARK: - Body
     var body: some View {
         NavigationStack {
             ZStack {
@@ -95,6 +104,11 @@ struct TeamSelectionView: View {
         }
     }
     
+    // MARK: - Private Methods
+    
+    /// Creates a custom row view for a team
+    /// - Parameter team: The team to display in the row
+    /// - Returns: A view containing the team's information and selection state
     private func teamRow(for team: Team) -> some View {
         HStack(spacing: 12) {
             AsyncImage(url: URL(string: team.image ?? "")) { image in

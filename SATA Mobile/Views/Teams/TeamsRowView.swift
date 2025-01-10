@@ -1,10 +1,16 @@
 import SwiftUI
 
+/// A horizontal scrollable view that displays a list of teams
 struct TeamsRowView: View {
+    // MARK: - Properties
+    /// Array of teams to display
     let teams: [Team]
+    /// Currently selected team
     let selectedTeam: Team?
+    /// Callback triggered when a team is selected
     let onTeamSelect: (Team) -> Void
     
+    // MARK: - Body
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 16) {
@@ -21,11 +27,18 @@ struct TeamsRowView: View {
     }
 }
 
+// MARK: - TeamItemView
+/// A view representing a single team item with an image and name
 private struct TeamItemView: View {
+    // MARK: - Properties
+    /// Team to display
     let team: Team
+    /// Whether this team is currently selected
     let isSelected: Bool
+    /// Callback triggered when the team is tapped
     let onTap: () -> Void
     
+    // MARK: - Body
     var body: some View {
         VStack {
             AsyncImage(url: URL(string: team.image ?? "")) { image in

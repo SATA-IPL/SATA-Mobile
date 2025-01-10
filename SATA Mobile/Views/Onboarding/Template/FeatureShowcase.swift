@@ -1,15 +1,25 @@
-//
-//  ShowcaseSiriView.swift
-//  SATA Mobile
-//
-//  Created by João Franco on 05/01/2025.
-//
-
 import SwiftUI
-import OnBoardingKit
 
-struct ShowcaseSiriView: View {
-    @Binding var path: NavigationPath
+struct FeatureShowcase<Action: View>: View {
+    let imageName: String
+    let title: String
+    let description: String
+    let footnote: String
+    let action: Action
+    
+    init(
+        imageName: String,
+        title: String,
+        description: String,
+        footnote: String,
+        @ViewBuilder action: () -> Action
+    ) {
+        self.imageName = imageName
+        self.title = title
+        self.description = description
+        self.footnote = footnote
+        self.action = action()
+    }
     
     var body: some View {
         ZStack {
@@ -21,9 +31,7 @@ struct ShowcaseSiriView: View {
             .ignoresSafeArea()
             
             VStack(spacing: 24) {
-                
-                // iPad illustration
-                Image("Siri")
+                Image(imageName)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 275)
@@ -40,12 +48,11 @@ struct ShowcaseSiriView: View {
                     )
                     .background(Color.clear)
                 
-                // Main content
                 VStack(spacing: 16) {
-                    Text("Siri")
+                    Text(title)
                         .font(.system(size: 32, weight: .bold))
                     
-                    Text("Use Siri to ask questions about your next team games, open the app, or integrate with Shortcuts for automated workflows. Just say \"Hey Siri, what can I do here?\" to get started.")
+                    Text(description)
                         .font(.system(size: 16))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
@@ -53,27 +60,16 @@ struct ShowcaseSiriView: View {
                 
                 Spacer()
                 
-                // Footer content
                 VStack(spacing: 20) {
-                    Text("This feature uses App Intents and Shortcuts to enable quick access and automation through Siri or Shortcuts app.")
+                    Text(footnote)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                     
-                    Button(action: {
-                        path.append(OnboardingPage.dynamicIsland)
-                    }) {
-                        Text("Continue")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(.accent.opacity(0.6))
-                            .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
+                    action
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
                 }
             }
             .ignoresSafeArea(edges: .top)

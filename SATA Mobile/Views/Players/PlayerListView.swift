@@ -8,8 +8,9 @@ struct PlayerListView: View {
     @State private var isShowingDetail = false
     
     var filteredPlayers: [Player] {
-        guard !searchText.isEmpty else { return viewModel.players }
-        return viewModel.players.filter { player in
+        let players = viewModel.filteredPlayers
+        guard !searchText.isEmpty else { return players }
+        return players.filter { player in
             player.name.localizedCaseInsensitiveContains(searchText)
         }
     }

@@ -1,11 +1,14 @@
 import SwiftUI
 
+/// A view that displays detailed information about a team
 struct MyTeamView: View {
+    // MARK: - Properties
     @StateObject private var viewModel = TeamDetailViewModel() // Add dedicated view model
     @EnvironmentObject private var teamsViewModel: TeamsViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let team: Team
     
+    // MARK: - View State
     enum TeamSection: String, CaseIterable {
         case overview = "Overview"
         case squad = "Squad"
@@ -14,9 +17,11 @@ struct MyTeamView: View {
     @State private var selectedSection: TeamSection = .overview
     @State private var selectedPlayer: Player?
     @State private var hasLoadedSquad = false
-    //Animation
+    
+    // MARK: - Animation Namespace for iOS 18 Transition
     @Namespace private var animation
     
+    // MARK: - Body
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -56,6 +61,9 @@ struct MyTeamView: View {
         }
     }
     
+    // MARK: - UI Components
+    /// Creates the team header view with logo and name
+    /// - Parameter team: The team to display
     private func teamHeader(_ team: Team) -> some View {
         VStack(spacing: 16) {
             if let imageUrl = team.image {
@@ -78,6 +86,8 @@ struct MyTeamView: View {
         }
     }
     
+    // MARK: - Section Views
+    /// Overview section showing team statistics and form
     private var overviewSection: some View {
         VStack(spacing: 16) {
             // Team Stats Card
@@ -97,17 +107,17 @@ struct MyTeamView: View {
             }
             
             // Form Guide Card
-                InfoCard(title: "Form Guide", icon: "chart.line.uptrend.xyaxis") {
-                    VStack(spacing: CardStyle.spacing) {
-                        HStack {
-                                HStack(spacing: 4) {
-                                    ForEach(padResults(viewModel.teamLastResults), id: \.self) { result in
-                                        FormIndicator(result: convertResult(result))
-                                    }
+            InfoCard(title: "Form Guide", icon: "chart.line.uptrend.xyaxis") {
+                VStack(spacing: CardStyle.spacing) {
+                    HStack {
+                        HStack(spacing: 4) {
+                            ForEach(padResults(viewModel.teamLastResults), id: \.self) { result in
+                                FormIndicator(result: convertResult(result))
                             }
                         }
                     }
                 }
+            }
             
             // Upcoming Games Card
             InfoCard(title: "Upcoming Game", icon: "calendar") {
@@ -125,23 +135,8 @@ struct MyTeamView: View {
         }
         .padding(.top)
     }
-    private func convertResult(_ result: String) -> String {
-        print("🔄 Converting result: \(result)")
-        let converted = switch result.lowercased() {
-            case "win": "W"
-            case "draw": "D"
-            case "loss": "L"
-            default: "-"
-        }
-        print("✅ Converted to: \(converted)")
-        return converted
-    }
     
-    private func padResults(_ results: [String], count: Int = 5) -> [String] {
-        let padding = Array(repeating: "empty", count: max(0, count - results.count))
-    return Array(results.prefix(count)) + padding
-    }
-    
+    /// Squad section showing team players
     private var squadSection: some View {
         VStack {
             if viewModel.squad.isEmpty {
@@ -172,85 +167,7 @@ struct MyTeamView: View {
         }
     }
     
-    struct PlayerCard: View {
-        let player: Player
-        let teamColor: Color
-        
-        var body: some View {
-            VStack(spacing: 12) {
-                // Player Image
-                ZStack(alignment: .bottomTrailing) {
-                    AsyncImage(url: URL(string: player.image)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Image(systemName: "person.crop.circle.fill")
-                            .resizable()
-                            .foregroundStyle(.gray.opacity(0.3))
-                    }
-                    .frame(width: 90, height: 90)
-                    .clipShape(Circle())
-                    .overlay {
-                        Circle()
-                            .strokeBorder(teamColor, lineWidth: 3)
-                    }
-                    
-                    // Player Number Badge
-                    Text("\(player.shirtNumber)")
-                        .font(.system(size: 14, weight: .black))
-                        .foregroundColor(.white)
-                        .frame(width: 28, height: 28)
-                        .background(teamColor)
-                        .clipShape(Circle())
-                        .overlay {
-                            Circle()
-                                .strokeBorder(.white, lineWidth: 2)
-                        }
-                        .offset(x: 5, y: 5)
-                }
-                
-                // Player Info
-                VStack(spacing: 4) {
-                    Text(player.name)
-                        .font(.system(size: 16, weight: .semibold))
-                        .lineLimit(1)
-                        .foregroundStyle(.white)
-                    
-                    Text(player.position)
-                        .font(.system(size: 13, weight: .medium))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(teamColor.opacity(0.8))
-                        .foregroundColor(.white)
-                        .clipShape(Capsule())
-                }
-                .font(.system(size: 12))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-            }
-        }
-    }
-    
-    struct StatItem: View {
-        let value: String
-        let label: String
-        
-        var body: some View {
-            VStack(spacing: 2) {
-                Text(value)
-                    .fontWeight(.bold)
-                Text(label)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-    
+    /// Matches section showing upcoming games
     private var matchesSection: some View {
         VStack(spacing: 16) {
             if viewModel.upcomingGames.isEmpty {
@@ -270,6 +187,20 @@ struct MyTeamView: View {
         .padding()
     }
     
+    // MARK: - Helper Functions
+    
+    /// Pads results array to specified count
+    /// - Parameters:
+    ///   - results: Array of results to pad
+    ///   - count: Desired final count
+    /// - Returns: Padded array of results
+    private func padResults(_ results: [String], count: Int = 5) -> [String] {
+        let padding = Array(repeating: "empty", count: max(0, count - results.count))
+        return Array(results.prefix(count)) + padding
+    }
+    
+    /// Creates the team's background gradient
+    /// - Parameter teamColor: The team's primary color
     private func teamBackground(teamColor: String) -> some View {
         Group {
             Rectangle()
@@ -292,48 +223,5 @@ struct MyTeamView: View {
             )
         }
         .ignoresSafeArea()
-    }
-}
-
-struct UpcomingGameCard: View {
-    let game: Game
-    let teamID: String
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(game.date)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                HStack {
-                    Text(game.homeTeam.name)
-                        .fontWeight(teamID == String(game.homeTeam.id) ? .bold : .regular)
-                    Text("vs")
-                        .foregroundStyle(.secondary)
-                    Text(game.awayTeam.name)
-                        .fontWeight(teamID == String(game.awayTeam.id) ? .bold : .regular)
-                }
-            }
-            Spacer()
-            Text(game.hour)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
-struct StatBox: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2.bold())
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
     }
 }

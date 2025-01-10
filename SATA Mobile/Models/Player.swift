@@ -13,7 +13,7 @@ struct Player: Codable, Identifiable {
     let name: String
     let position: String
     let shirtNumber: String
-    var isFavorite: Bool = false
+    var isFavorite: Bool = false  // Now properly mutable
     
     // Added fields from PlayerDetail
     let age: String?

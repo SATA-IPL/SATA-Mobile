@@ -1,10 +1,17 @@
 import SwiftUI
 
+/// A view that displays a searchable list of stadiums with filtering capabilities
+/// and navigation to detailed stadium views.
 struct StadiumListView: View {
+    // MARK: - Properties
+    
     @EnvironmentObject private var stadiumsViewModel: StadiumsViewModel
     @State private var selectedStadium: Stadium?
     @State private var searchText = ""
     
+    // MARK: - Computed Properties
+    
+    /// Returns a filtered array of stadiums based on search text and favorites filter
     var filteredStadiums: [Stadium] {
         let favoriteFiltered = stadiumsViewModel.filteredStadiums
         guard !searchText.isEmpty else { return favoriteFiltered }
@@ -13,8 +20,11 @@ struct StadiumListView: View {
         }
     }
     
+    // MARK: - Body
+    
     var body: some View {
         ZStack {
+            // Background gradient
             LinearGradient(
                 gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
                 startPoint: .top,
@@ -22,12 +32,15 @@ struct StadiumListView: View {
             )
             .ignoresSafeArea()
             
+            // MARK: - Content
+            
             Group {
                 switch stadiumsViewModel.state {
                 case .loading:
                     ProgressView()
                 case .loaded:
                     List(filteredStadiums) { stadium in
+                        // Stadium row button
                         Button {
                             selectedStadium = stadium
                         } label: {
@@ -58,9 +71,12 @@ struct StadiumListView: View {
                 }
             }
         }
+        // MARK: - View Modifiers
+        
         .navigationTitle("Stadiums")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                // Favorites toggle button
                 Button {
                     withAnimation(.spring()) {
                         stadiumsViewModel.showFavoritesOnly.toggle()

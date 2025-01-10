@@ -1,12 +1,21 @@
 import SwiftUI
 
+/// A view that displays user profile settings and navigation options
+/// This view allows users to:
+/// - Change their current team
+/// - Access system settings
+/// - Navigate to different sections of the app
+/// - View app information
 struct ProfileView: View {
+    // MARK: - Properties
     @EnvironmentObject private var teamsViewModel: TeamsViewModel
     @State private var showTeamSelection = false
     @State private var showOnboarding = false
     
+    // MARK: - View Body
     var body: some View {
         ZStack {
+            // MARK: Background Gradient
             LinearGradient(
                 gradient: Gradient(colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.01)]),
                 startPoint: .top,
@@ -14,7 +23,9 @@ struct ProfileView: View {
             )
             .ignoresSafeArea()
             
+            // MARK: Main Content
             List {
+                // MARK: Team Selection Section
                 Section("Change Your Team") {
                     Button(action: { showTeamSelection = true }) {
                         HStack {
@@ -44,6 +55,7 @@ struct ProfileView: View {
                 }
                 .listRowBackground(Color.primary.opacity(0.1))
                 
+                // MARK: Account Settings Section
                 Section("Account") {
                     Button {
                         openSystemSettings()
@@ -61,6 +73,7 @@ struct ProfileView: View {
                 }
                 .listRowBackground(Color.primary.opacity(0.1))
                 
+                // MARK: App Navigation Section
                 Section("App") {
                     NavigationLink {
                         TeamListView()
@@ -108,7 +121,10 @@ struct ProfileView: View {
         }
     }
     
-    func openSystemSettings() {
+    // MARK: - Helper Methods
+    
+    /// Opens the system settings app
+    private func openSystemSettings() {
         if let appSettingsURL = URL(string: UIApplication.openSettingsURLString) {
             if UIApplication.shared.canOpenURL(appSettingsURL) {
                 UIApplication.shared.open(appSettingsURL, options: [:], completionHandler: nil)
@@ -116,7 +132,8 @@ struct ProfileView: View {
         }
     }
     
-    func openShortcuts() {
+    /// Opens the Shortcuts app
+    private func openShortcuts() {
         if let shortcutsURL = URL(string: "shortcuts://") {
             if UIApplication.shared.canOpenURL(shortcutsURL) {
                 UIApplication.shared.open(shortcutsURL, options: [:], completionHandler: nil)
@@ -125,6 +142,7 @@ struct ProfileView: View {
     }
 }
 
+// MARK: - Preview
 #Preview {
     ProfileView()
 }

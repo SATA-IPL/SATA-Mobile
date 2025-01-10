@@ -9,12 +9,19 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+// MARK: - Main Live Activity Configuration
+/// Defines the main widget and Dynamic Island for displaying live game activities.
 struct SATA_LiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: GameActivityAttributes.self) { context in
+            ///Live Activity Widget
+            ///Functionality: Display live game information
+            ///Is used in: Lock Screen, Home Screen and Always On Display
             SATAGameWidgetView(context: context)
         } dynamicIsland: { context in
+            /// Configuration for Dynamic Island in Expanded state.
             DynamicIsland {
+                /// Leading region (When Tapped) | Home Team
                 DynamicIslandExpandedRegion(.leading) {
                     VStack {
                         Text(context.attributes.homeTeam.prefix(3).uppercased())
@@ -28,6 +35,7 @@ struct SATA_LiveActivity: Widget {
                     }
                 }
                 
+                /// Trailing region (When Tapped) | Away Team
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack {
                         Text(context.attributes.awayTeam.prefix(3).uppercased())
@@ -41,6 +49,7 @@ struct SATA_LiveActivity: Widget {
                     }
                 }
                 
+                /// Center region (When Tapped) | Game Time and Status
                 DynamicIslandExpandedRegion(.center) {
                     HStack(spacing: 16) {
                         VStack(spacing: 4) {
@@ -53,6 +62,7 @@ struct SATA_LiveActivity: Widget {
                     }
                 }
                 
+                /// Bottom region (When Tapped) | Last Event
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(spacing: 4) {
                         Image(systemName: "clock.fill")
@@ -63,17 +73,22 @@ struct SATA_LiveActivity: Widget {
                             .foregroundStyle(.primary)
                     }
                 }
-            } compactLeading: {
+            }
+            /// Configuration for Dynamic Island in Collapsed state.
+            /// Leading region | Home Team
+            compactLeading: {
                 HStack(spacing: 10) {
                     Text(context.attributes.homeTeam.prefix(3).uppercased())
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(context.attributes.homeTeamColor == "#121212" || context.attributes.homeTeamColor == "#000000" ? .white : Color(hex: context.attributes.homeTeamColor))
+                        .foregroundColor(Color(hex: context.attributes.homeTeamColor))
                     Text("\(context.state.homeScore)")
                         .font(.system(size: 25))
                         .fontWeight(.black)
                         .fontWidth(.compressed)
                 }
-            } compactTrailing: {
+            }
+            /// Trailing region | Away Team
+            compactTrailing: {
                 HStack(spacing: 4) {
                     Text("\(context.state.awayScore)")
                         .font(.system(size: 25))
@@ -81,16 +96,25 @@ struct SATA_LiveActivity: Widget {
                         .fontWidth(.compressed)
                     Text(context.attributes.awayTeam.prefix(3).uppercased())
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(context.attributes.awayTeamColor == "#121212" || context.attributes.awayTeamColor == "#000000" ? .white : Color(hex: context.attributes.awayTeamColor))
+                        .foregroundColor(Color(hex: context.attributes.awayTeamColor))
                 }
-            } minimal: {
-                Text("\(context.state.homeScore)-\(context.state.awayScore)")
+            }
+            ///Configuration for Dynamic Island in Minimal state (When Used with other activities)
+            ///Minimal region | Score
+            minimal: {
+                Text("\(context.state.homeScore)")
+                    .foregroundColor(Color(hex: context.attributes.homeTeamColor))
+                + Text("-")
+                + Text("\(context.state.awayScore)")
+                    .foregroundColor(Color(hex: context.attributes.awayTeamColor))
             }
         }
         .supplementalActivityFamilies([.small])
     }
 }
 
+// MARK: - Live Activity Widget View
+/// Main view for displaying game information in different widget sizes.
 struct SATAGameWidgetView: View {
     @Environment(\.activityFamily) var activityFamily
     @Environment(\.isActivityFullscreen) var isStandByMode
@@ -98,6 +122,8 @@ struct SATAGameWidgetView: View {
     
     var body: some View {
         switch activityFamily {
+            
+        /// For Lock Screen, Home Screen and Always On Display
         case .medium:
             HStack(spacing: 0) {
                 VStack{
@@ -183,137 +209,93 @@ struct SATAGameWidgetView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 140)
             .clipped()
+            
+        /// For Apple Watch Live Activity (watchOS 11)
+        /// Documentation: https://developer.apple.com/videos/play/wwdc2024/10068
         case .small:
-            HStack(spacing: 0) {
-                ZStack {
-                    Rectangle()
-                        .fill(.black)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    Rectangle()
-                        .fill(.thinMaterial)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    LinearGradient(
-                        colors: [Color(hex: context.attributes.homeTeamColor), Color(hex: context.attributes.awayTeamColor)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .opacity(0.5)
-                    .blur(radius: 50)
-                    
+            ZStack {
+                // Base layer
+                Rectangle()
+                    .fill(.black)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
+                // Blur material layer
+                Rectangle()
+                    .fill(.thinMaterial)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                
+                // Gradient overlay
+                LinearGradient(
+                    colors: [Color(hex: context.attributes.homeTeamColor), Color(hex: context.attributes.awayTeamColor)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .opacity(0.5)
+                .blur(radius: 50)
+                
+                // Content
+                VStack(spacing: 0){
                     HStack(spacing: 8) {
+                        // Home team
                         VStack {
                             Text(context.attributes.homeTeam.prefix(3).uppercased())
                                 .font(.system(size: 14, weight: .bold))
                                 .frame(width: 30, height: 30)
-                                .background(Circle().fill(Color(hex: context.attributes.homeTeamColor)))
-                                .foregroundColor(Color(hex: context.attributes.homeTeamColor).textColor())
+                                .background(Circle().fill(Color(hex: context.attributes.homeTeamColor).textColor()))
+                                .foregroundColor(.white)
                         }
                         .frame(maxWidth: .infinity)
                         
+                        // Home score
                         Text("\(context.state.homeScore)")
                             .foregroundStyle(.primary)
                             .font(.system(size: 32, weight: .black).width(.compressed))
                         
-                        VStack {
+                        // Game info
+                        VStack(spacing: 2) {
                             Text("\(context.state.gameTime)'")
                                 .font(.system(.footnote, weight: .bold).width(.compressed))
                         }
                         .frame(maxWidth: .infinity)
                         
+                        // Away score
                         Text("\(context.state.awayScore)")
                             .foregroundStyle(.primary)
                             .font(.system(size: 32, weight: .black).width(.compressed))
                         
+                        // Away team
                         VStack {
                             Text(context.attributes.awayTeam.prefix(3).uppercased())
                                 .font(.system(size: 14, weight: .bold))
                                 .frame(width: 30, height: 30)
-                                .background(Circle().fill(Color(hex: context.attributes.awayTeamColor)))
-                                .foregroundColor(Color(hex: context.attributes.awayTeamColor).textColor())
+                                .background(Circle().fill(Color.init(hex: context.attributes.awayTeamColor).textColor()))
+                                .foregroundColor(.black)
                         }
                         .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Separator
+                    Rectangle()
+                        .fill(.secondary.opacity(0.5))
+                        .frame(height: 1)
+                        .padding(.vertical,4)
+                    
+                    // Last event
+                    VStack{
+                        Text(context.state.lastEvent)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.top, 4)
                     }
                     .padding(.horizontal, 8)
                 }
             }
             .preferredColorScheme(.dark)
-            .frame(maxWidth: .infinity)
+            .frame(maxHeight: .infinity)
             .clipped()
-            .mask { RoundedRectangle(cornerRadius: 16, style: .continuous) }
-            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(.thinMaterial, lineWidth: 1)
-            )
-        }
-    }
-}
-
-struct SharedImageLoader {
-    static let appGroupId = "group.com.joaofranco.SATA-Mobile"
-    
-    static func getImageFilePath(for imageName: String) -> String? {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
-            return nil
-        }
-        return containerURL.appendingPathComponent(imageName).path
-    }
-    
-    static func loadImage(named imageName: String) -> UIImage? {
-        guard let path = getImageFilePath(for: imageName) else { return nil }
-        return UIImage(contentsOfFile: path)
-    }
-}
-
-struct TeamColumn: View {
-    let imageName: String
-    let team: String
-    let score: Int
-    
-    var body: some View {
-        VStack {
-            Text(team.prefix(3).uppercased())
-                .font(.system(size: 24, weight: .bold))
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(Color.gray)) // You might want to pass team color as parameter
-                .foregroundColor(.white)
-            Text(team)
-                .font(.caption)
-            Text("\(score)")
-                .font(.title)
-                .bold()
-        }
-    }
-}
-
-struct TeamScoreView: View {
-    let teamName: String
-    let score: Int
-    
-    var body: some View {
-        HStack {
-            Text(teamName.prefix(3).uppercased())
-                .font(.system(size: 14, weight: .bold))
-                .frame(width: 30, height: 30)
-                .background(Circle().fill(Color.gray)) // You might want to pass team color as parameter
-                .foregroundColor(.white)
-            VStack(alignment: .leading) {
-                Text(teamName)
-                    .font(.caption2)
-                Text("\(score)")
-                    .font(.headline)
-                    .bold()
-            }
-        }
-    }
-}
-
-extension View {
-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
+        @unknown default:
+            // For Future Activity Families
+            EmptyView()
         }
     }
 }

@@ -10,18 +10,31 @@ import UIKit
 import CoreImage.CIFilterBuiltins
 import QuartzCore
 
+// MARK: - Enums
+
+/// Defines the direction of the variable blur effect
 public enum VariableBlurDirection {
+    /// Blur effect starts from top (blurred) to bottom (clear)
     case blurredTopClearBottom
+    /// Blur effect starts from bottom (blurred) to top (clear)
     case blurredBottomClearTop
 }
 
+// MARK: - SwiftUI View
+
+/// A SwiftUI view that implements a variable blur effect
 public struct VariableBlurView: UIViewRepresentable {
-
+    /// Maximum blur radius for the effect
     public var maxBlurRadius: CGFloat = 20
-
+    
+    /// Direction of the blur effect
     public var direction: VariableBlurDirection = .blurredTopClearBottom
-
-    /// By default, variable blur starts from 0 blur radius and linearly increases to `maxBlurRadius`. Setting `startOffset` to a small negative coefficient (e.g. -0.1) will start blur from larger radius value which might look better in some cases.
+    
+    /// Offset coefficient for the blur start position
+    ///
+    /// By default, variable blur starts from 0 blur radius and linearly increases to `maxBlurRadius`.
+    /// Setting `startOffset` to a small negative coefficient (e.g. -0.1) will start blur from larger
+    /// radius value which might look better in some cases.
     public var startOffset: CGFloat = 0
 
     public func makeUIView(context: Context) -> VariableBlurUIView {
@@ -32,9 +45,19 @@ public struct VariableBlurView: UIViewRepresentable {
     }
 }
 
-/// credit https://github.com/jtrivedi/VariableBlurView
-open class VariableBlurUIView: UIVisualEffectView {
+// MARK: - UIKit Implementation
 
+/// A UIKit view that implements the variable blur effect using CAFilter
+/// Credit: https://github.com/jtrivedi/VariableBlurView
+open class VariableBlurUIView: UIVisualEffectView {
+    
+    // MARK: - Initialization
+    
+    /// Creates a new variable blur view with the specified parameters
+    /// - Parameters:
+    ///   - maxBlurRadius: Maximum blur radius
+    ///   - direction: Direction of the blur effect
+    ///   - startOffset: Offset coefficient for the blur start position
     public init(maxBlurRadius: CGFloat = 20, direction: VariableBlurDirection = .blurredTopClearBottom, startOffset: CGFloat = 0) {
         super.init(effect: UIBlurEffect(style: .regular))
 
@@ -72,20 +95,30 @@ open class VariableBlurUIView: UIVisualEffectView {
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
+    // MARK: - Lifecycle Methods
+    
     open override func didMoveToWindow() {
-        // fixes visible pixelization at unblurred edge (https://github.com/nikstar/VariableBlur/issues/1)
+        // Fixes visible pixelization at unblurred edge
         guard let window, let backdropLayer = subviews.first?.layer else { return }
         backdropLayer.setValue(window.screen.scale, forKey: "scale")
     }
-
+    
     open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        // `super.traitCollectionDidChange(previousTraitCollection)` crashes the app
+        // Note: super.traitCollectionDidChange(previousTraitCollection) crashes the app
     }
-
-    private func makeGradientImage(width: CGFloat = 100, height: CGFloat = 100, startOffset: CGFloat, direction: VariableBlurDirection) -> CGImage { // much lower resolution might be acceptable
+    
+    // MARK: - Private Methods
+    
+    /// Creates a gradient image used as the blur mask
+    /// - Parameters:
+    ///   - width: Width of the gradient image
+    ///   - height: Height of the gradient image
+    ///   - startOffset: Offset for the gradient start position
+    ///   - direction: Direction of the gradient
+    /// - Returns: A CGImage containing the gradient
+    private func makeGradientImage(width: CGFloat = 100, height: CGFloat = 100, startOffset: CGFloat, direction: VariableBlurDirection) -> CGImage {
         let ciGradientFilter =  CIFilter.linearGradient()
-//        let ciGradientFilter =  CIFilter.smoothLinearGradient()
         ciGradientFilter.color0 = CIColor.black
         ciGradientFilter.color1 = CIColor.clear
         ciGradientFilter.point0 = CGPoint(x: 0, y: height)

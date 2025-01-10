@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 
+/// Widget to Open the Main App SATA from the Lock Screen or Control Center
 struct OpenAppControl: ControlWidget {
     static let kind: String = "com.example.MyApp.OpenAppControl"
 
@@ -16,6 +17,7 @@ struct OpenAppControl: ControlWidget {
     }
 }
 
+/// Widget to Open the Favourite Team Screen on SATA from the Lock Screen or Control Center
 struct OpenTeamScreenControl: ControlWidget {
     static let kind: String = "com.example.MyApp.OpenTeamScreenControl"
 

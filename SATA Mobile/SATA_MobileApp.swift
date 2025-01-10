@@ -15,7 +15,7 @@ struct SATAMobileApp: App {
             ContentView()
                 .preferredColorScheme(.dark)
                 .onOpenURL { url in
-                    // Handle deep linking if needed
+                    /// Handle incoming URLs
                 }
         }
     }

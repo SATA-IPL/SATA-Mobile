@@ -8,8 +8,13 @@
 import SwiftUI
 import GoogleGenerativeAI
 
-// Add these view modifiers after imports
+// MARK: - View Modifiers
+/// Custom view modifiers for enhanced visual effects
 extension View {
+    /// Adds a glowing effect to the view
+    /// - Parameters:
+    ///   - color: The color of the glow effect
+    ///   - radius: The radius of the blur effect
     func intelligenceGlow(color: Color = .blue, radius: CGFloat = 15) -> some View {
         self.overlay(
             self
@@ -19,16 +24,20 @@ extension View {
         )
     }
     
+    /// Adds a shimmering animation effect to the view
     func shimmerEffect() -> some View {
         self.modifier(ShimmerModifier())
     }
     
+    /// Triggers haptic feedback
+    /// - Parameter style: The style of haptic feedback to generate
     func hapticFeedback(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
 }
 
-// Add after existing extensions
+// MARK: - Background Views
+/// Animated background view with moving gradients
 struct IntelligenceBackground: View {
     @State private var animate = false
     @State private var phase = 0.0
@@ -92,6 +101,8 @@ struct IntelligenceBackground: View {
     }
 }
 
+// MARK: - Custom Modifiers
+/// Adds a shimmer effect to any view
 struct ShimmerModifier: ViewModifier {
     @State private var phase: CGFloat = 0
     
@@ -124,10 +135,16 @@ struct ShimmerModifier: ViewModifier {
     }
 }
 
+// MARK: - Main Chat View
+/// Main view for the chat interface with the AI assistant
 struct ChatView: View {
+    // MARK: Properties
+    // View Model and Game Data
     let game: Game
     let model: GenerativeModel
     @StateObject private var viewModel = GameDetailViewModel()
+    
+    // UI State
     @Binding var isPresented: Bool
     @State private var messageText = ""
     @State private var messages: [(text: String, isUser: Bool)] = []
@@ -136,11 +153,15 @@ struct ChatView: View {
     @State private var scrollProxy: ScrollViewProxy?
     @State private var showingClearConfirmation = false
     @State private var shouldScroll = true
-    private let inputOverlayHeight: CGFloat = 110  // Height of suggestions + input area
-    private let scrollPadding: CGFloat = 20  // Add padding for better visual appearance
     @State private var contentHeight: CGFloat = 0
+    @State private var chatHistory: [String] = []
     
-    // Initialize with a welcome message
+    // Layout Constants
+    private let inputOverlayHeight: CGFloat = 110
+    private let scrollPadding: CGFloat = 20
+    
+    // MARK: Initialization
+    /// Initialize the chat view with game data and AI model
     init(game: Game, model: GenerativeModel, isPresented: Binding<Bool>) {
         self.game = game
         self.model = model
@@ -155,6 +176,7 @@ struct ChatView: View {
         UINavigationBar.appearance().standardAppearance = appearance
     }
     
+    // MARK: Body
     var body: some View {
         GeometryReader { proxy in
             NavigationStack {
@@ -344,6 +366,8 @@ struct ChatView: View {
         }
     }
     
+    // MARK: Private Methods
+    /// Scrolls to the latest message or loading indicator
     private func scrollToMessage(proxy: ScrollViewProxy) {
         let id = isLoading ? "loading" : String(messages.count - 1)
         
@@ -357,6 +381,7 @@ struct ChatView: View {
         shouldScroll = true
     }
     
+    /// Sends a message to the AI and processes the response
     private func sendMessage() {
         guard !messageText.isEmpty else { return }
         
@@ -366,18 +391,23 @@ struct ChatView: View {
         
         withAnimation {
             messages.append((userMessage, true))
+            chatHistory.append("User: \(userMessage)")
             isLoading = true
         }
         
         Task {
             do {
-                // Update to use viewModel's generateContext
+                // Create context with chat history
+                let historyContext = chatHistory.joined(separator: "\n")
                 let prompt = """
-                    \(viewModel.generateContext())
+                    \(await viewModel.generateContext(game: game))
+                    
+                    Previous conversation:
+                    \(historyContext)
                     
                     User Question: \(userMessage)
                     
-                    Please provide a natural, conversational response based on the game information above.
+                    Please provide a natural, conversational response based on the game information and conversation history above.
                     """
                 
                 print("Prompt: \(prompt)")
@@ -387,6 +417,7 @@ struct ChatView: View {
                     isLoading = false
                     if let response = result.text {
                         messages.append((response, false))
+                        chatHistory.append("Assistant: \(response)")
                         if let proxy = scrollProxy {
                             scrollToMessage(proxy: proxy)
                         }
@@ -404,7 +435,8 @@ struct ChatView: View {
     }
 }
 
-// Add this struct before MessageBubble
+// MARK: - Supporting Views
+/// Button for quick chat suggestions
 struct SuggestionButton: View {
     let text: String
     let action: () -> Void
@@ -442,6 +474,7 @@ struct SuggestionButton: View {
     }
 }
 
+/// Animated typing indicator for AI responses
 struct TypingIndicator: View {
     @State private var phase = 0.0
     
@@ -467,6 +500,7 @@ struct TypingIndicator: View {
     }
 }
 
+/// Custom chat bubble view for messages
 struct MessageBubble: View {
     let text: String
     let isUser: Bool
@@ -539,6 +573,8 @@ struct MessageBubble: View {
     }
 }
 
+// MARK: - Preference Keys
+/// Tracks the height of the scroll view content
 struct ViewHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {

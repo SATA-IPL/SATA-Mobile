@@ -3,11 +3,15 @@ import AVKit
 import Combine
 import AVFoundation
 
+// MARK: - CustomPlayerViewController
+/// Custom view controller that manages video playback and Picture-in-Picture functionality
 class CustomPlayerViewController: UIViewController {
+    // MARK: - Properties
     var playerViewController: AVPlayerViewController
     private var timeObserver: Any?
     private var statusObserver: NSKeyValueObservation?
     
+    // MARK: - Initialization
     init(playerViewController: AVPlayerViewController) {
         self.playerViewController = playerViewController
         super.init(nibName: nil, bundle: nil)
@@ -17,6 +21,7 @@ class CustomPlayerViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -50,6 +55,7 @@ class CustomPlayerViewController: UIViewController {
         }
     }
     
+    // MARK: - Private Methods
     private func setupObservers() {
         guard let player = playerViewController.player else { return }
         
@@ -87,7 +93,7 @@ class CustomPlayerViewController: UIViewController {
         statusObserver?.invalidate()
     }
     
-    // PIP delegate methods
+    // MARK: - PIP Delegate Methods
     func playerViewControllerWillStartPictureInPicture(_ playerViewController: AVPlayerViewController) {
         // Handle PIP will start
     }
@@ -105,11 +111,15 @@ class CustomPlayerViewController: UIViewController {
     }
 }
 
+// MARK: - VideoPlayerView
+/// SwiftUI view that wraps AVPlayerViewController for video playback
 struct VideoPlayerView: UIViewControllerRepresentable {
+    // MARK: - Properties
     var videoURL: URL
     var title: String
     var subtitle: String
     
+    // MARK: - UIViewControllerRepresentable
     func makeUIViewController(context: Context) -> UIViewController {
         let playerController = AVPlayerViewController()
         let playerItem = AVPlayerItem(url: videoURL)
@@ -146,6 +156,7 @@ struct VideoPlayerView: UIViewControllerRepresentable {
         // Handle any updates if necessary
     }
 
+    // MARK: - Private Methods
     private func setMetadata(for item: AVPlayerItem) {
         let metadataItems = [
             createMetadataItem(identifier: .commonIdentifierTitle, value: title),
@@ -165,6 +176,7 @@ struct VideoPlayerView: UIViewControllerRepresentable {
     }
 }
 
+// MARK: - Preview
 #Preview {
     let videoURL = URL(string: "https://embed-ssl.wistia.com/deliveries/cc8402e8c16cc8f36d3f63bd29eb82f99f4b5f88/accudvh5jy.mp4")!
     VideoPlayerView(videoURL:videoURL, title: "Title", subtitle: "Subtitle")

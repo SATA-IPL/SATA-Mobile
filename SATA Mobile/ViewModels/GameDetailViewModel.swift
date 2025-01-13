@@ -349,7 +349,7 @@ class GameDetailViewModel: ObservableObject {
     }
 
     func predictWinner(gameId: Int) async {
-        guard let url = URL(string: "http://144.24.177.214:5000/games/predict") else {
+        guard let url = URL(string: "http://144.24.177.214:5000/games/predict/\(gameId)") else {
             print("❌ Invalid URL for prediction endpoint")
             return
         }

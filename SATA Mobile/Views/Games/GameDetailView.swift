@@ -286,7 +286,12 @@ struct GameDetailView: View {
             }
         }
         .fullScreenCover(isPresented: $showVideoPlayer) {
-            VideoPlayerView(videoURL: URL(string: "https://github.com/FranciscoMarques1/Video_test/raw/refs/heads/main/real%20video.mp4")!, title: "Title", subtitle: "Subtitle")
+            VideoPlayerView(
+                isPresented: $showVideoPlayer,
+                videoURL: URL(string: viewModel.game?.videoUrl ?? "")!,
+                title: game.homeTeam.name + " vs " + game.awayTeam.name,
+                subtitle: game.date + " | " + game.hour,
+                thumbnailURL: URL(string: "https://images.unsplash.com/photo-1486286701208-1d58e9338013?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"))
                 .presentationBackground(.clear)
                 .ignoresSafeArea()
         }
@@ -391,7 +396,7 @@ struct GameDetailView: View {
                     else {
                         // Move prediction card outside of detailedGame check since it's independent
                         if let predictedWinner = viewModel.predictedWinner {
-                            InfoCard(title: "Match Prediction", icon: "trophy.fill") {
+                            InfoCard(title: "Most Likely to Win", icon: "trophy.fill") {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(spacing: 16) {
                                         let winningTeam = (predictedWinner == detailedGame.homeTeam.id) ? detailedGame.homeTeam : detailedGame.awayTeam

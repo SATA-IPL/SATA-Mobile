@@ -75,14 +75,8 @@ struct MyTeamView: View {
                     Color.gray.opacity(0.3)
                 }
                 .frame(width: 120, height: 120)
-                .padding(.top)
+                .padding(.vertical)
             }
-            
-            VStack(spacing: 4) {
-                Text(team.name)
-                    .font(.title.bold())
-            }
-            .padding(.bottom)
         }
     }
     
@@ -125,7 +119,7 @@ struct MyTeamView: View {
                     NavigationLink {
                         GameDetailView(game: nextGame, gameId: nextGame.id, animation: animation)
                     } label: {
-                        UpcomingGameCard(game: nextGame, teamID: team.id)
+                        UpcomingGameCard(game: nextGame, teamID: team.id, dateAsHeader: false)
                     }
                 } else {
                     Text("No upcoming games")
@@ -179,12 +173,14 @@ struct MyTeamView: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(viewModel.upcomingGames) { game in
-                        UpcomingGameCard(game: game, teamID: team.id)
+                        InfoCard(title: game.date + " | " + game.hour, icon: "calendar") {
+                            UpcomingGameCard(game: game, teamID: team.id, dateAsHeader: true)
+                        }
                     }
                 }
             }
         }
-        .padding()
+        .padding(.top)
     }
     
     // MARK: - Helper Functions

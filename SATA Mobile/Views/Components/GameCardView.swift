@@ -71,13 +71,6 @@ struct GameCardView: View {
                             Text(formattedDate)
                                 .font(.system(.headline, weight: .bold).width(.compressed))
                                 .foregroundStyle(.secondary)
-                            Text(game.state.capitalized)
-                                .font(.system(.caption, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.ultraThinMaterial)
-                                .clipShape(.capsule)
                         }
                         
                     }

@@ -169,11 +169,6 @@ struct ChatView: View {
         self._messages = State(initialValue: [
             ("Hi! I'm your game assistant. Feel free to ask me anything about the match between \(game.homeTeam.name) and \(game.awayTeam.name)!", false)
         ])
-
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0)
-        UINavigationBar.appearance().standardAppearance = appearance
     }
     
     // MARK: Body
@@ -299,13 +294,6 @@ struct ChatView: View {
                             VariableBlurView(direction: .blurredBottomClearTop)
                                 .ignoresSafeArea()
                         )
-                    }
-                    
-                    VStack {
-                        VariableBlurView(maxBlurRadius: 20, direction: .blurredTopClearBottom)
-                            .frame(height: proxy.safeAreaInsets.top + 44) // Include toolbar height
-                            .ignoresSafeArea()
-                        Spacer()
                     }
                     
                     .navigationTitle("Coach Assistant")

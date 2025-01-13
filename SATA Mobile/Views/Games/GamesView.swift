@@ -4,7 +4,7 @@ import SwiftUI
 struct GamesView: View {
     // MARK: - View Model
     @StateObject private var viewModel = GamesViewModel()
-    @StateObject private var teamsViewModel = TeamsViewModel()
+    @EnvironmentObject private var teamsViewModel: TeamsViewModel
     
     // MARK: - View States
     @Namespace private var namespace
@@ -13,7 +13,7 @@ struct GamesView: View {
     @State private var isCalendarMode = false
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @Namespace private var monthAnimation
-    @State private var isTeamsLoading = false
+    @State private var isTeamsLoading = true
     @State private var hideOldGames = true
 
     // MARK: - Body
@@ -181,11 +181,13 @@ struct GamesView: View {
     /// Menu for filtering games by team.
     private var teamFilterMenu: some View {
         Menu {
-            if isTeamsLoading {
+            if teamsViewModel.state == .loading {
                 Text("Loading teams...")
             } else {
                 Button {
-                    selectedTeamFilter = nil
+                    withAnimation {
+                        selectedTeamFilter = nil
+                    }
                 } label: {
                     HStack {
                         Text("All Teams")
@@ -195,10 +197,12 @@ struct GamesView: View {
                     }
                 }
                 
-                if let favoriteTeamId = UserDefaults.standard.string(forKey: "teamId"),
+                if let favoriteTeamId = teamsViewModel.currentTeam,
                    let favoriteTeam = teamsViewModel.teams.first(where: { $0.id == favoriteTeamId }) {
                     Button {
-                        selectedTeamFilter = favoriteTeam
+                        withAnimation {
+                            selectedTeamFilter = favoriteTeam
+                        }
                     } label: {
                         HStack {
                             Text(favoriteTeam.name)
@@ -210,16 +214,20 @@ struct GamesView: View {
                     }
                 }
                 
-                Divider()
-                
-                ForEach(teamsViewModel.teams.sorted(by: { $0.name < $1.name }), id: \.id) { team in
-                    Button {
-                        selectedTeamFilter = team
-                    } label: {
-                        HStack {
-                            Text(team.name)
-                            if selectedTeamFilter?.id == team.id {
-                                Image(systemName: "checkmark")
+                if !teamsViewModel.teams.isEmpty {
+                    Divider()
+                    
+                    ForEach(teamsViewModel.teams.sorted(by: { $0.name < $1.name }), id: \.id) { team in
+                        Button {
+                            withAnimation {
+                                selectedTeamFilter = team
+                            }
+                        } label: {
+                            HStack {
+                                Text(team.name)
+                                if selectedTeamFilter?.id == team.id {
+                                    Image(systemName: "checkmark")
+                                }
                             }
                         }
                     }
@@ -366,7 +374,7 @@ struct GamesView: View {
             }
         }
         
-        return games
+        return games.sorted { $0.date < $1.date }
     }
 
     /// Groups games by date for calendar view.

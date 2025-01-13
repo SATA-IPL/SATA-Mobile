@@ -4,13 +4,17 @@ import SwiftUI
 struct UpcomingGameCard: View {
     let game: Game
     let teamID: String
+    let dateAsHeader: Bool
     
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(game.date)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if(!dateAsHeader)
+                {
+                    Text(game.date + " | " + game.hour)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
                 HStack {
                     Text(game.homeTeam.name)
                         .fontWeight(teamID == String(game.homeTeam.id) ? .bold : .regular)
@@ -21,9 +25,9 @@ struct UpcomingGameCard: View {
                 }
             }
             Spacer()
-            Text(game.hour)
-                .font(.caption)
+            Image(systemName: "chevron.right")
                 .foregroundStyle(.secondary)
         }
+        .foregroundStyle(.white)
     }
 }

@@ -63,7 +63,7 @@ struct StadiumView: View {
                 .preferredColorScheme(.dark)
                 .toolbar(content: {
                     GlassToolbar(
-                        title: "Lisbon",
+                        title: "Stadium",
                         dismiss: dismiss,
                         openInMaps: openInMaps,
                         isFavorite: stadium.isFavorite,
